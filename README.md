@@ -1,5 +1,7 @@
 # README
 
+![check-app](https://github.com/COMPASS-DOE/TEMPESTdash/actions/workflows/check-app.yaml/badge.svg)
+
 To create a new Dropbox token, do
 ```
 library(rdrop2)
