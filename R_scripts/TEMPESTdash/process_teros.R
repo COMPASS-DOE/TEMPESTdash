@@ -8,25 +8,27 @@ library(kableExtra)
 set.seed(7)
 
 
-process_teros <- function(token) {
+process_teros <- function(token, datadir) {
 
-    # Generate list of 'current' teros files
-    t_dir <- drop_dir("TEMPEST_PNNL_Data/Current_Data/", dtoken = token)
-    t_files <- grep(t_dir$path_display, pattern = "Terosdata\\.dat$", value = TRUE)
+    teros_inventory <- read_csv("design_doc_copies/TEROS_Network_Location copy.csv")
 
-    teros_inventory <- read_csv("TEROS_Network_Location copy.csv")
-
-    lapply(t_files, fileread, token, length(t_files)) %>% bind_rows() -> teros_primitive
+    if(!is.null(getDefaultReactiveDomain())) {
+        progress <- incProgress
+    } else {
+        progress <- NULL
+    }
+    teros_primitive <- compasstools::process_teros_dir(datadir, tz = "EST",
+                                                      dropbox_token = token,
+                                                      progress_bar = progress)
 
     teros_primitive %>%
-        mutate(diff = difftime(Sys.time(), TIMESTAMP, units = "days")) %>%
-        filter(diff < 5) %>%
-        #na count needs to be before this
-        # NAs = sum(!is.finite(M_Value)),
         left_join(teros_inventory, by = c("Logger" = "Data Logger ID",
                                           "Data_Table_ID" = "Terosdata table channel")) %>%
         select(- `Date of Last Field Check`) %>%
-        rename("Active_Date" = "Date Online (2020)") -> teros
+        rename("Active_Date" = "Date Online (2020)",
+               "Grid_Square" = "Grid Square") %>%
+        filter(!is.na(ID)) ->
+        teros
 
     nomatch <- anti_join(teros, teros_inventory, by = c("Logger" = "Data Logger ID",
                                                             "Data_Table_ID" = "Terosdata table channel"))
@@ -38,5 +40,4 @@ process_teros <- function(token) {
     }
 
     return(teros)
-
 }
