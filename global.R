@@ -1,4 +1,3 @@
-#
 # These are global settings for the TEMPEST data dashboard
 # June 2022
 
@@ -14,9 +13,11 @@ library(dygraphs)
 library(xts)
 library(shinybusy)
 
-source("process_sapflow.R")
-source("process_teros.R")
-source("process_aquatroll.R")
+if(!require("compasstools")) {
+    stop("Need to remotes::install_github('COMPASS-DOE/compasstools')")
+}
+library(compasstools)
+
 
 TESTING <- FALSE
 
@@ -46,4 +47,3 @@ NO_DATA_GRAPH <- ggplot() +
     theme(axis.title = element_blank(),
           axis.text  = element_blank(),
     )
-

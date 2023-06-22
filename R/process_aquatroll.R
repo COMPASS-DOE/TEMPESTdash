@@ -1,4 +1,3 @@
-# TODO: this is preliminary, as I don't have Dropbox access
 
 library(readr)
 library(lubridate)
@@ -7,8 +6,9 @@ library(tidyr)
 library(ggplot2)
 library(plotly)
 library(kableExtra)
-set.seed(7)
 
+# This only needs to be done once
+troll_inventory <- read_csv("design_doc_copies/aquatroll_inventory copy.csv")
 
 process_aquatroll <- function(token, datadir) {
 
@@ -22,8 +22,6 @@ process_aquatroll <- function(token, datadir) {
 
     change_IDs <- c("PNNL_13", "PNNL_23", "PNNL_32")
     change_instrument <- "TROLL600"
-
-    troll_inventory <- read_csv("design_doc_copies/aquatroll_inventory copy.csv")
 
     atroll <- compasstools::process_aquatroll_dir(datadir, "EST",
                                                   dropbox_token = token,
