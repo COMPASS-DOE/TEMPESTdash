@@ -7,10 +7,10 @@ library(plotly)
 library(kableExtra)
 set.seed(7)
 
+# This only needs to be done once
+teros_inventory <- read_csv("design_doc_copies/TEROS_Network_Location copy.csv")
 
 process_teros <- function(token, datadir) {
-
-    teros_inventory <- read_csv("design_doc_copies/TEROS_Network_Location copy.csv")
 
     if(!is.null(getDefaultReactiveDomain())) {
         progress <- incProgress
