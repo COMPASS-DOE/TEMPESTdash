@@ -552,21 +552,6 @@ server <- function(input, output) {
 
     # ------------------ Text alerts -----------------------------
 
-    # initial_alert <- observeEvent(input$txt_alert,{
-    #     #only sent to input number when user first inputs information
-    #
-    #     phone_number <- parse_number(input$phone_number, locale = locale(grouping_mark = "-"))
-    #
-    #     text_msg <- gm_mime() %>%
-    #         gm_to(paste0(phone_number, carrier_email)) %>% #change to link with df
-    #         gm_from("compassfme.tools@gmail.com") %>%
-    #         gm_text_body("Thank you for signing up for hourly alerts!")
-    #
-    #     # need to add how often to send, right now only once
-    #     gm_send_message(text_msg)
-    #
-    # })
-    #
     observeEvent({
 
         #this will calculate values and send out messages to everyone in "new_user" df
@@ -574,37 +559,6 @@ server <- function(input, output) {
         #initial_alert()
         alertInvalidate()
     }, {
-
-        #     reactive_df()$teros_filtered %>%
-        #         filter(!ID %in% reactive_df()$teros_bad_sensors$ID) %>%
-        #         group_by(Plot, variable) %>%
-        #         filter(Timestamp == dplyr::last(Timestamp)) %>%
-        #         summarise(value = mean(value, na.rm = TRUE)) %>%
-        #         mutate(dataset = "TEROS (avg)") -> teros
-        #
-        #     reactive_df()$aquatroll_200 %>%
-        #         pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"),
-        #                      names_to = "variable", values_to = "value") -> aq200
-        #
-        #     reactive_df()$aquatroll_600 %>%
-        #         pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"),
-        #                      names_to = "variable", values_to = "value") %>%
-        #         bind_rows(aq200) -> full_trolls_long
-        #
-        #     full_trolls_long %>%
-        #         filter(Timestamp == dplyr::last(Timestamp)) %>%
-        #         group_by(Plot, variable) %>%
-        #         summarise(value = mean(value, na.rm = TRUE)) %>%
-        #         mutate(dataset = "AquaTroll (last)") -> trolls
-        #
-        #     reactive_df()$battery %>%
-        #         filter(Timestamp == dplyr::last(Timestamp)) %>%
-        #         select(Plot, Logger, BattV_Avg) %>%
-        #         rename(value = BattV_Avg) %>%
-        #         mutate(dataset = "Battery (last)") -> battery
-        #
-        # write.csv(battery, file = textConnection("bat", "w"), quote = FALSE)
-
         msg <- paste(
             paste0("System status as of: ",
                    with_tz(Sys.time(), tzone = "America/New_York"), " EDT"),
@@ -613,15 +567,7 @@ server <- function(input, output) {
             paste0("TEROS: ", reactive_df()$teros_bdg$percent_in),
             paste0("Aquatroll: ", reactive_df()$aquatroll_bdg$percent_in),
             paste0("Battery: ", reactive_df()$battery_bdg$percent_in),
-            # "",
-            # "** Battery details **",
-            # paste(bat, collapse = "\n"),
             sep = "\n")
-        #
-        # cat("Sapflow:", reactive()$sapflow_bdg$percent_in, "\n",
-        #     "TEROS:", reactive()$teros_bdg$percent_in, "\n",
-        #     "Aquatroll:", reactive()$aquatroll_bdg$percent_in, "\n",
-        #     "Battery:", reactive()$battery_bdg$percent_in)
 
         for(i in seq_len(nrow(TEXT_MSG_USERS))) {
             phone_number <- TEXT_MSG_USERS$number[i]
@@ -652,34 +598,6 @@ server <- function(input, output) {
             })
         }
 
-
     })
-    #
-    #     new_user <- reactiveValues(data = data_frame(phone_number = numeric(), choices = character()))
 
-    #     observeEvent(input$txt_alert, {
-    # # this call will append a df with information of choices
-    #
-    #         # gm_auth_configure(path = "PATH TO JSON HERE")
-    #         # gm_oauth_app()
-    #
-    #         carrier_email <- if(input$carrier == "Verizon") {
-    #             carrier_email <- "@vtext.com"
-    #         } else if(input$carrier == "AT&T") {
-    #             carrier_email <- "@txt.att.net"
-    #         } else if(input$carrier == "Sprint") {
-    #             carrier_email <- "@messaging.sprintpcs.com"
-    #         } else if(input$carrier == "T-Mobile") {
-    #             carrier_email <- "@tmomail.net"
-    #         }
-    #
-    #         p_number <- parse_number(input$phone_number, locale = locale(grouping_mark = "-"))
-    #
-    #         email <- paste0(phone_number, carrier_email)
-    #
-    #         new_user$data <- rbind(new_user$data, data_frame(phone_number = email, choices = input$number)) # need to figure out how to paste choices
-    #
-    #         shinyalert("Message sent", type = "success")
-    #
-    #     })
 }

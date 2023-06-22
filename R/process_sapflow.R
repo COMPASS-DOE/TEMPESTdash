@@ -1,5 +1,4 @@
 # Script to read raw sapflow data and process
-# Produces a sapflow data frame produce and writes to CSV
 
 library(readr)
 library(lubridate)
@@ -9,12 +8,6 @@ library(ggplot2)
 library(plotly)
 library(kableExtra)
 
-if(!require("compasstools")) {
-    stop("Need to remotes::install_github('COMPASS-DOE/compasstools')")
-}
-library(compasstools)
-
-set.seed(7)
 # This only needs to be done once
 sf_inventory <- read_csv("design_doc_copies/sapflow_inventory copy.csv", col_types = "ccdcdddclc")
 
