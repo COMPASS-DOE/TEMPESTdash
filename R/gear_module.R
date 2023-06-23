@@ -35,9 +35,10 @@ gearServer <- function(id) {
         ## Below is the module function
         function(input, output, session) {
 
-            reactive({
+            gear_reactive <- reactive({
                 EVENT_START <- as_datetime(paste(input$event_date, input$event_start), tz = "EST")
-                EVENT_STOP <- EVENT_START + hours(10)
+                # EVENT_LENGTH is defined in global.R
+                EVENT_STOP <- EVENT_START + hours(EVENT_LENGTH)
                 EVENT_HOURS <- as.numeric(difftime(EVENT_STOP, EVENT_START, units = "hours"))
 
                 list(EVENT_START = EVENT_START,
