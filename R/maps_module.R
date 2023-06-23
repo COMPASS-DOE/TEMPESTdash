@@ -112,18 +112,20 @@ readr::read_csv("design_doc_copies/sapflow_inventory copy.csv", col_types = "ccd
     select(Tree_Code, Tag) ->
     sapflow_inv
 
-# Do the compass rose transparency and rotation calculations (plot-specific) once and store
-library(magick)
 library(cowplot)
-rose_dat <- magick::image_read("map_data/compass-rose.png")
-roses <- list()
-for(i in seq_len(nrow(plot_info))) {
-    img <- magick::image_rotate(rose_dat,
-                                degrees = plot_info$north_degrees[i]
-    )
-    roses[[plot_info$plot[i]]] <- magick::image_transparent(img, color = "white")
-}
 
+# Do the compass rose transparency and rotation calculations (plot-specific)
+# once and store, IF magick is available
+if(require(magick)) {
+    rose_dat <- magick::image_read("map_data/compass-rose.png")
+    roses <- list()
+    for(i in seq_len(nrow(plot_info))) {
+        img <- magick::image_rotate(rose_dat,
+                                    degrees = plot_info$north_degrees[i]
+        )
+        roses[[plot_info$plot[i]]] <- magick::image_transparent(img, color = "white")
+    }
+}
 
 # Main plotting function
 make_plot_map <- function(STATUS_MAP,
@@ -180,7 +182,7 @@ make_plot_map <- function(STATUS_MAP,
 
     # Overlays
 
-    if(show_rose) {
+    if(show_rose && exists("roses")) {
         # Draw into plot
         p <- p + cowplot::draw_image(roses[[plot_name]], x = 5, y = 4, scale = 8) # centered, easy
     }
