@@ -8,7 +8,8 @@ library(plotly)
 library(kableExtra)
 
 # This only needs to be done once
-troll_inventory <- read_csv("design_doc_copies/aquatroll_inventory copy.csv")
+troll_inventory <- read_csv("design_doc_copies/aquatroll_inventory copy.csv",
+                            col_types = "ccccddcccdddddd")
 
 process_aquatroll <- function(token, datadir) {
 
