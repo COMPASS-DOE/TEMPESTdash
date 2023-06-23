@@ -89,7 +89,7 @@ server <- function(input, output) {
                    .keep = "all") %>%
             filter(bad_sensor) %>%
             ungroup() %>%
-            select(Plot, ID, Depth, Logger, Grid_Square) %>%
+            select(Plot, ID, variable, Depth, Logger, Grid_Square) %>%
             distinct(ID, Logger, .keep_all = TRUE) ->
             teros_bad_sensors
 

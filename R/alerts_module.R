@@ -1,0 +1,45 @@
+# Alerts module
+
+# The module’s UI function
+# The first argument to a UI function should always be `id`.
+# This is the namespace for the module.
+# https://shiny.posit.co/r/articles/improve/modules/
+alertsUI <- function(id) {
+    # `NS(id)` returns a namespace function
+    ns <- NS(id)
+
+    tabItem(
+        tabName = "alerts",
+        h3("Coming Soon!!")
+        # textInput(inputId = "phone_number",
+        #           label = "Phone number:",
+        #           placeholder = "301-555-5555"),
+        # selectInput(inputId = "carrier",
+        #             label = "Select your carrier:",
+        #             choices = c("Verizon", "AT&T", "T-Mobile", "Sprint")),
+        # materialSwitch("system_alert", label = "System Alerts", status = "success", right = TRUE),
+        # materialSwitch("value_alert", label = "Value Alerts", status = "success", right = TRUE),
+        # # Only show this panel if Custom is selected
+        # conditionalPanel(
+        #     condition = "input.value_alert == 1",
+        #     awesomeCheckboxGroup("value_alert_type",
+        #                          label = "Choose dataset to receive alerts about:",
+        #                          choices = c("Sapflow", "TEROS", "AquaTroll", "Battery"),
+        #                          inline = TRUE)
+        # ),
+        # actionButton("txt_alert","Receive Text Alerts")
+    )
+}
+
+
+# Module server function - a fragment of server logic
+alertsServer <- function(id) {
+    moduleServer(
+        id,
+        ## Below is the module function
+        function(input, output, session) {
+
+            # Coming soon :)
+
+        })
+}
