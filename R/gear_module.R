@@ -27,8 +27,6 @@ gearUI <- function(id) {
 
 
 # Module server function - a fragment of server logic
-# Parameters: id, STATUS_MAP (a flag), and dd (dashboard data, outside of the maps module namespace)
-# see https://shiny.posit.co/r/articles/improve/modules/
 gearServer <- function(id) {
     moduleServer(
         id,
