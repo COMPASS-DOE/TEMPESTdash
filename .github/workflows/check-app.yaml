@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, master]
 
-name: Test app w/ renv
+name: Test w/ renv
 
 jobs:
   test-app:
