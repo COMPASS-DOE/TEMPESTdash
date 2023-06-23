@@ -114,7 +114,7 @@ ui <- dashboardPage(
                 tabName = "battery",
                 dataTableOutput("btable")
             ),
-            # Maps pane UI is defined in R/maps_module.R
+            # Maps tab UI is defined in R/maps_module.R
             mapsUI("mapsTab"),
             tabItem(
                 tabName = "alerts",
