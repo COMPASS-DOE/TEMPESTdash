@@ -101,14 +101,16 @@ plot_info <- tribble(
 )
 
 # Tree data - read it only once
-readr::read_csv("design_doc_copies/inventory copy.csv") %>%
+readr::read_csv("design_doc_copies/inventory copy.csv",
+                col_types = "ccdcdDccdDcDdcDdcDdclcc") %>%
     filter(In_Plot, Status_2023 %in% c("LI", "DS")) %>%
     select(Plot, Grid, Species_code, Tag, DBH_2023) %>%
     mutate(x = substr(Grid, 1, 1), y = substr(Grid, 2, 2)) ->
     map_tree_data
 
 # Mapping from sapflow to trees
-readr::read_csv("design_doc_copies/sapflow_inventory copy.csv", col_types = "ccdcdddclc") %>%
+readr::read_csv("design_doc_copies/sapflow_inventory copy.csv",
+                col_types = "ccdcdddclc") %>%
     select(Tree_Code, Tag) ->
     sapflow_inv
 
