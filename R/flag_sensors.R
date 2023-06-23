@@ -1,4 +1,3 @@
-library(dplyr)
 
 # These RANGE variables are passed to flag_sensors() by the server, and used
 # to identify sensors out of range
@@ -26,8 +25,8 @@ badge_color <- function(frac_out, badge_colors = BADGE_COLORS) {
     }
 
     colors <- cut(frac_out,
-                  c(BADGE_COLORS, 1),
-                  labels = names(BADGE_COLORS),
+                  c(badge_colors, 1.01), # 1.01 so that 1 is included in the highest interval
+                  labels = names(badge_colors),
                   right = FALSE)
     as.character(colors)
 }
@@ -46,16 +45,6 @@ frac_outside_limits <- function(values, left_limit, right_limit, na.rm = FALSE) 
     sum(which_outside_limits(values, left_limit, right_limit)) / length(values)
 }
 
-bad_sensors <- function(df, values, id, limits) {
-
-    df[!between(values, min(limits), max(limits)), ] %>% select(id, Grid_Square) -> bounds
-
-    df[is.na(values), ] %>% select(id, Grid_Square) -> nas
-
-    unique(bind_rows(nas, bounds))
-
-}
-
 # Return both fraction_out and associated badge color for a vector of
 # values and associated limits
 flag_sensors <- function(values, limits, na.rm = FALSE) {
@@ -70,26 +59,3 @@ flag_sensors <- function(values, limits, na.rm = FALSE) {
     x$color[invalids] <- "black"
     x
 }
-
-# # Test code for flag_sensors above
-# # Basic test data
-# message("Basic test - grouped data")
-# test <- tibble(plot = rep(1:3, each = 10),
-#                values = c(1:10,         # plot 1
-#                           3:7, 2:6,     # plot 2
-#                           rep(4:5, 5))) # plot 3
-# test %>%
-#     group_by(plot) %>%
-#     summarise(flag_sensors(values, limits = c(3,7))) %>%
-#     print()
-#
-# # We can count NAs as errors, or not
-# message("Basic test - NAs are errors")
-# test2 <- tibble(values = c(3:4, NA, 6:7))
-# test2 %>%
-#     summarise(flag_sensors(values, limits = c(3,7))) %>%
-#     print()
-# message("Basic test - NAs are not errors")
-# test2 %>%
-#     summarise(flag_sensors(values, limits = c(3,7), na.rm = TRUE)) %>%
-#     print()

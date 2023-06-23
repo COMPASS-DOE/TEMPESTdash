@@ -20,6 +20,8 @@ library(compasstools)
 
 
 TESTING <- FALSE
+# Check if we're running in a test (continuous integration) setup
+TESTING <- TESTING || Sys.getenv("CI") == "true"
 
 TEXT_MSG_USERS <- tribble(
     ~name,     ~number,       ~carrier,
