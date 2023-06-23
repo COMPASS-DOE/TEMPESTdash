@@ -19,9 +19,14 @@ if(!require("compasstools")) {
 library(compasstools)
 
 
+# The TESTING flag causes the server to load static data in test-data/
 TESTING <- FALSE
-# Check if we're running in a test (continuous integration) setup
+# Check if we're running in a testing or continuous integration environment
+TESTING <- TESTING || isTRUE(getOption("shiny.testmode"))
 TESTING <- TESTING || Sys.getenv("CI") == "true"
+
+# Flooding event length (hours)
+EVENT_LENGTH <- 10
 
 TEXT_MSG_USERS <- tribble(
     ~name,     ~number,       ~carrier,
