@@ -42,23 +42,8 @@ ui <- dashboardPage(
                     valueBoxOutput("battery_bdg", width = 3)
                 ),
                 fluidRow(
-                    column(1,
-                           dropdownButton(
-                               icon = icon("gear"),
-                               circle = TRUE,
-                               status = "primary",
-                               dateInput("event_date",
-                                         label = 'Event Date: yyyy-mm-dd',
-                                         value = Sys.Date()
-                               ),
-                               textInput("event_start",
-                                         label = h3("Event Start"),
-                                         value = "06:00:00",
-                                         placeholder = "HH:MM:SS"),
-                               actionButton("prog_button",
-                                            label = "Update")
-                           )
-                    ),
+                    # Gear UI is defined in R/gear_module.R
+                    column(1, gearUI("gear")),
                     column(5,
                            progress_circle(value = 0, shiny_id = "circle",
                                            color = "#00B0CA", stroke_width = 15,
@@ -129,6 +114,7 @@ ui <- dashboardPage(
                 tabName = "battery",
                 dataTableOutput("btable")
             ),
+            # Maps pane UI is defined in R/maps_module.R
             mapsUI("mapsTab"),
             tabItem(
                 tabName = "alerts",

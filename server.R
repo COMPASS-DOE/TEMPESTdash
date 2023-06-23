@@ -2,7 +2,6 @@
 # June 2022
 
 source("global.R")
-source("flag_sensors.R")
 
 server <- function(input, output) {
 
@@ -151,15 +150,8 @@ server <- function(input, output) {
 
     })
 
-    progress <- reactive({
-        EVENT_START <- as_datetime(paste(input$event_date, input$event_start), tz = "EST")
-        EVENT_STOP <- EVENT_START + hours(10)
-        EVENT_HOURS <- as.numeric(difftime(EVENT_STOP, EVENT_START, units = "hours"))
-
-        list(EVENT_START = EVENT_START,
-             EVENT_STOP = EVENT_STOP,
-             EVENT_HOURS = EVENT_HOURS)
-    })
+    # gearServer is defined in R/gear_module.R
+    progress <- gearServer("gear")
 
     # ------------------ Dashboard graphs -----------------------------
 
@@ -513,6 +505,7 @@ server <- function(input, output) {
     })
 
     # ------------------ Maps tab -----------------------------
+    # mapsServer is defined in R/maps_module.R
     statusmap <- mapsServer("mapsTab", STATUS_MAP = TRUE, dd = reactive_df())
     output$status_map <- renderPlot(statusmap())
     datamap <- mapsServer("mapsTab", STATUS_MAP = FALSE, dd = reactive_df())
