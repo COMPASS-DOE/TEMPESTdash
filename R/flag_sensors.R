@@ -1,4 +1,3 @@
-library(dplyr)
 
 # These RANGE variables are passed to flag_sensors() by the server, and used
 # to identify sensors out of range
@@ -44,17 +43,6 @@ frac_outside_limits <- function(values, left_limit, right_limit, na.rm = FALSE) 
 
     # In this calculation, NAs count as out-of-bounds
     sum(which_outside_limits(values, left_limit, right_limit)) / length(values)
-}
-
-
-bad_sensors <- function(df, values, id, limits) {
-
-    df[!between(values, min(limits), max(limits)), ] %>% select(id, Grid_Square) -> bounds
-
-    df[is.na(values), ] %>% select(id, Grid_Square) -> nas
-
-    unique(bind_rows(nas, bounds))
-
 }
 
 # Return both fraction_out and associated badge color for a vector of
