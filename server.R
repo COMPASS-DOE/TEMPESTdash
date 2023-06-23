@@ -1,5 +1,5 @@
 # This is the server of the TEMPEST data dashboard
-# June 2022
+# June 2023
 
 source("global.R")
 
@@ -8,7 +8,7 @@ server <- function(input, output) {
     autoInvalidate <- reactiveTimer(15 * 60 * 1000)
     alertInvalidate <- reactiveTimer(60 * 60 * 1000)
 
-    reactive_df <- reactive({
+    dropbox_data <- reactive({
 
         autoInvalidate()
 
@@ -88,6 +88,7 @@ server <- function(input, output) {
                                                      right_limit = high[1]),
                    .keep = "all") %>%
             filter(bad_sensor) %>%
+            ungroup() %>%
             select(Plot, ID, Depth, Logger, Grid_Square) %>%
             distinct(ID, Logger, .keep_all = TRUE) ->
             teros_bad_sensors
@@ -171,7 +172,7 @@ server <- function(input, output) {
 
     output$sapflow_bad_sensors <- DT::renderDataTable({
 
-        reactive_df()$sapflow %>%
+        dropbox_data()$sapflow %>%
             filter(Timestamp > with_tz(Sys.time(), tzone = "EST") - FLAG_TIME_WINDOW * 60 * 60,
                    Timestamp < with_tz(Sys.time(), tzone = "EST")) -> sapflow
 
@@ -181,17 +182,17 @@ server <- function(input, output) {
     })
 
     output$teros_bad_sensors <- DT::renderDataTable({
-        reactive_df()$teros_bad_sensors %>%
+        dropbox_data()$teros_bad_sensors %>%
             datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
     output$troll_bad_sensors <- DT::renderDataTable({
-        reactive_df()$aquatroll_bad_sensors %>%
+        dropbox_data()$aquatroll_bad_sensors %>%
             datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
     output$batt_bad_sensors <- DT::renderDataTable({
-        reactive_df()$battery %>%
+        dropbox_data()$battery %>%
             filter(Timestamp > with_tz(Sys.time(), tzone = "EST") - FLAG_TIME_WINDOW * 60 * 60,
                    Timestamp < with_tz(Sys.time(), tzone = "EST"))  -> battery
 
@@ -209,7 +210,7 @@ server <- function(input, output) {
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
 
-        sapflow <- reactive_df()$sapflow
+        sapflow <- dropbox_data()$sapflow
 
         if(nrow(sapflow)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -242,7 +243,7 @@ server <- function(input, output) {
         # one facet per sensor (temperature, moisture, conductivity)
         # This graph is shown when users click the "TEROS" tab on the dashboard
 
-        teros <- reactive_df()$teros
+        teros <- dropbox_data()$teros
 
         if(nrow(teros) > 1) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -282,12 +283,12 @@ server <- function(input, output) {
         # variables, in which case the badge status computation would be like
         # that of TEROS
         # This graph is shown when users click the "Battery" tab on the dashboard
-        reactive_df()$aquatroll_200 %>%
+        dropbox_data()$aquatroll_200 %>%
             pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") -> aq200
 
-        aquatroll <- reactive_df()$aquatroll_filtered
+        aquatroll <- dropbox_data()$aquatroll_filtered
 
-        reactive_df()$aquatroll_600 %>%
+        dropbox_data()$aquatroll_600 %>%
             pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
             bind_rows(aq200) -> full_trolls_long
 
@@ -320,7 +321,7 @@ server <- function(input, output) {
     output$battery_plot <- renderPlotly({
         # Battery voltages, from the sapflow data
         # This graph is shown when users click the "Battery" tab on the dashboard
-        battery <- reactive_df()$battery
+        battery <- dropbox_data()$battery
 
         if(nrow(battery)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -346,7 +347,7 @@ server <- function(input, output) {
     output$sapflow_table <- DT::renderDataTable(datatable({
         autoInvalidate()
 
-        reactive_df()$sapflow_table_data
+        dropbox_data()$sapflow_table_data
     }))
 
     output$sapflow_detail_graph <- renderPlotly({
@@ -354,12 +355,12 @@ server <- function(input, output) {
         if(length(input$sapflow_table_rows_selected)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            reactive_df()$sapflow_table_data %>%
+            dropbox_data()$sapflow_table_data %>%
                 slice(input$sapflow_table_rows_selected) %>%
                 pull(Tree_Code) ->
                 trees_selected
 
-            reactive_df()$sapflow %>%
+            dropbox_data()$sapflow %>%
                 filter(Tree_Code %in% trees_selected) %>%
                 ggplot(aes(Timestamp, Value, group = Tree_Code, color = Plot)) +
                 geom_rect(aes(xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
@@ -381,7 +382,7 @@ server <- function(input, output) {
     output$teros_table <- renderDataTable({
         autoInvalidate()
 
-        reactive_df()$teros %>%
+        dropbox_data()$teros %>%
             group_by(ID, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
@@ -396,7 +397,7 @@ server <- function(input, output) {
         if(length(input$teros_table_rows_selected)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            reactive_df()$teros %>%
+            dropbox_data()$teros %>%
                 group_by(ID, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
@@ -407,7 +408,7 @@ server <- function(input, output) {
                 select(variable, ID) ->
                 tsensor_selected
 
-            reactive_df()$teros %>%
+            dropbox_data()$teros %>%
                 filter(ID %in% tsensor_selected$ID, variable %in% tsensor_selected$variable) %>%
                 ggplot(aes(Timestamp, value, group = interaction(ID, variable), color = ID)) +
                 geom_line() +
@@ -423,14 +424,14 @@ server <- function(input, output) {
     output$troll_table <- renderDataTable({
         autoInvalidate()
 
-        reactive_df()$aquatroll_200 %>%
+        dropbox_data()$aquatroll_200 %>%
             pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
             select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) -> aq200_long
 
-        reactive_df()$aquatroll_600 %>%
+        dropbox_data()$aquatroll_600 %>%
             pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
@@ -448,21 +449,21 @@ server <- function(input, output) {
 
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            reactive_df()$aquatroll_200 %>%
+            dropbox_data()$aquatroll_200 %>%
                 pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") -> aq200
 
-            reactive_df()$aquatroll_600 %>%
+            dropbox_data()$aquatroll_600 %>%
                 pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
                 bind_rows(aq200) -> full_trolls_long
 
-            reactive_df()$aquatroll_200 %>%
+            dropbox_data()$aquatroll_200 %>%
                 pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
                 select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) -> aq200_long
 
-            reactive_df()$aquatroll_600 %>%
+            dropbox_data()$aquatroll_600 %>%
                 pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
@@ -493,7 +494,7 @@ server <- function(input, output) {
     output$btable <- DT::renderDataTable({
         autoInvalidate()
 
-        reactive_df()$battery %>%
+        dropbox_data()$battery %>%
             select(Timestamp, BattV_Avg, Plot, Logger) %>%
             group_by(Plot, Logger) %>%
             distinct() %>%
@@ -505,40 +506,41 @@ server <- function(input, output) {
     })
 
     # ------------------ Maps tab -----------------------------
+
     # mapsServer is defined in R/maps_module.R
-    statusmap <- mapsServer("mapsTab", STATUS_MAP = TRUE, dd = reactive_df())
+    statusmap <- mapsServer("mapsTab", STATUS_MAP = TRUE, dd = dropbox_data())
     output$status_map <- renderPlot(statusmap())
-    datamap <- mapsServer("mapsTab", STATUS_MAP = FALSE, dd = reactive_df())
+    datamap <- mapsServer("mapsTab", STATUS_MAP = FALSE, dd = dropbox_data())
     output$data_map <- renderPlot(datamap())
 
 
     # ------------------ Dashboard badges -----------------------------
 
     output$sapflow_bdg <- renderValueBox({
-        valueBox(reactive_df()$sapflow_bdg$percent_in[1],
+        valueBox(dropbox_data()$sapflow_bdg$percent_in[1],
                  "Sapflow",
-                 color = reactive_df()$sapflow_bdg$color[1],
+                 color = dropbox_data()$sapflow_bdg$color[1],
                  icon = icon("tree")
         )
     })
     output$teros_bdg <- renderValueBox({
-        valueBox(reactive_df()$teros_bdg$percent_in[1],
+        valueBox(dropbox_data()$teros_bdg$percent_in[1],
                  "TEROS",
-                 color = reactive_df()$teros_bdg$color[1],
+                 color = dropbox_data()$teros_bdg$color[1],
                  icon = icon("temperature-high")
         )
     })
     output$aquatroll_bdg <- renderValueBox({
-        valueBox(reactive_df()$aquatroll_bdg$percent_in[1],
+        valueBox(dropbox_data()$aquatroll_bdg$percent_in[1],
                  "AquaTroll",
-                 color = reactive_df()$aquatroll_bdg$color[1],
+                 color = dropbox_data()$aquatroll_bdg$color[1],
                  icon = icon("water")
         )
     })
     output$battery_bdg <- renderValueBox({
-        valueBox(reactive_df()$battery_bdg$percent_in[1],
+        valueBox(dropbox_data()$battery_bdg$percent_in[1],
                  "Battery",
-                 color = reactive_df()$battery_bdg$color[1],
+                 color = dropbox_data()$battery_bdg$color[1],
                  icon = icon("car-battery")
         )
     })
@@ -556,10 +558,10 @@ server <- function(input, output) {
             paste0("System status as of: ",
                    with_tz(Sys.time(), tzone = "America/New_York"), " EDT"),
             "",
-            paste0("Sapflow: ", reactive_df()$sapflow_bdg$percent_in),
-            paste0("TEROS: ", reactive_df()$teros_bdg$percent_in),
-            paste0("Aquatroll: ", reactive_df()$aquatroll_bdg$percent_in),
-            paste0("Battery: ", reactive_df()$battery_bdg$percent_in),
+            paste0("Sapflow: ", dropbox_data()$sapflow_bdg$percent_in),
+            paste0("TEROS: ", dropbox_data()$teros_bdg$percent_in),
+            paste0("Aquatroll: ", dropbox_data()$aquatroll_bdg$percent_in),
+            paste0("Battery: ", dropbox_data()$battery_bdg$percent_in),
             sep = "\n")
 
         for(i in seq_len(nrow(TEXT_MSG_USERS))) {
