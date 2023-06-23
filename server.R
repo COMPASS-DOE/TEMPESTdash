@@ -10,6 +10,8 @@ server <- function(input, output) {
 
     dropbox_data <- reactive({
 
+        # Invalidate and re-execute this reactive expression every time the
+        # timer fires
         autoInvalidate()
 
         if(TESTING) {
@@ -160,12 +162,13 @@ server <- function(input, output) {
         input$prog_button
         autoInvalidate() # for actual app, we can have multiple triggers
     }, {
-        circleval <- round(as.numeric(difftime(with_tz(Sys.time(), tzone = "EST"),
-                                               progress()$EVENT_START,
-                                               units = "hours")) / progress()$EVENT_HOURS, 2)
+        elapsed <- difftime(with_tz(Sys.time(), tzone = "EST"),
+                            progress()$EVENT_START,
+                            units = "hours")
+        circleval <- round(as.numeric(elapsed) / progress()$EVENT_HOURS, 2)
 
         # Don't show a flood progress indicator if too far beyond the end
-        if(circleval > 1.05) circleval <- NA
+        if(circleval < 0.0 || circleval > 1.05) circleval <- NA
 
         update_progress("circle", circleval)
     })
@@ -549,50 +552,13 @@ server <- function(input, output) {
 
     observeEvent({
 
-        #this will calculate values and send out messages to everyone in "new_user" df
+        # This will calculate values and send out messages to everyone in "new_user" df
         # could just have people not choose what they want alerts for?
         #initial_alert()
         alertInvalidate()
     }, {
-        msg <- paste(
-            paste0("System status as of: ",
-                   with_tz(Sys.time(), tzone = "America/New_York"), " EDT"),
-            "",
-            paste0("Sapflow: ", dropbox_data()$sapflow_bdg$percent_in),
-            paste0("TEROS: ", dropbox_data()$teros_bdg$percent_in),
-            paste0("Aquatroll: ", dropbox_data()$aquatroll_bdg$percent_in),
-            paste0("Battery: ", dropbox_data()$battery_bdg$percent_in),
-            sep = "\n")
-
-        for(i in seq_len(nrow(TEXT_MSG_USERS))) {
-            phone_number <- TEXT_MSG_USERS$number[i]
-            carrier <- TEXT_MSG_USERS$carrier[i]
-
-            carrier_email <- if(carrier == "Verizon") {
-                carrier_email <- "@vtext.com"
-            } else if(carrier == "AT&T") {
-                carrier_email <- "@txt.att.net"
-            } else if(carrier == "Sprint") {
-                carrier_email <- "@messaging.sprintpcs.com"
-            } else if(carrier == "T-Mobile") {
-                carrier_email <- "@tmomail.net"
-            }
-
-            email <- paste0(phone_number, carrier_email)
-
-            # Wrap this in a try so that if not authorized the app doesn't stop
-            try({
-                text_msg <- gm_mime() %>%
-                    gm_to(email) %>%
-                    gm_from("compassfme.tools@gmail.com") %>%
-                    gm_text_body(msg) # CHANGE THIS
-
-                # need to add how often to send, right now only once
-
-                gm_send_message(text_msg)
-            })
-        }
-
+        # send_alerts is defined in R/alerts_module.R
+        send_alerts(dropbox_data)
     })
 
 }
