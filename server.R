@@ -15,10 +15,10 @@ server <- function(input, output) {
         autoInvalidate()
 
         if(TESTING) {
-            sapflow <- readRDS("test-data/sapflow")
-            teros <- readRDS("test-data/teros")
-            aquatroll <- readRDS("test-data/aquatroll")
-            battery <- readRDS("test-data/battery")
+            sapflow <- readRDS("offline-data/sapflow")
+            teros <- readRDS("offline-data/teros")
+            aquatroll <- readRDS("offline-data/aquatroll")
+            battery <- readRDS("offline-data/battery")
         } else {
             sapflow <- withProgress(process_sapflow(token, datadir), message = "Updating sapflow...")
             teros <- withProgress(process_teros(token, datadir), message = "Updating TEROS...")
