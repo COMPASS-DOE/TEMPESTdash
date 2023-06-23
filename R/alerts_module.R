@@ -39,7 +39,7 @@ alertsServer <- function(id) {
         ## Below is the module function
         function(input, output, session) {
 
-            # Coming soon :)
+            # Coming soon!
 
         })
 }
