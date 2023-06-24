@@ -50,10 +50,10 @@ send_alerts <- function(dd) {
     msg <- paste(
         paste("System status as of", Sys.time()),
         "",
-        paste0("Sapflow: ", dd()$sapflow_bdg$percent_in),
-        paste0("TEROS: ", dd()$teros_bdg$percent_in),
-        paste0("Aquatroll: ", dd()$aquatroll_bdg$percent_in),
-        paste0("Battery: ", dd()$battery_bdg$percent_in),
+        paste0("Sapflow: ", dd()[["sapflow_bdg"]]$percent_in),
+        paste0("TEROS: ", dd()[["teros_bdg"]]$percent_in),
+        paste0("Aquatroll: ", dd()[["aquatroll_bdg"]]$percent_in),
+        paste0("Battery: ", dd()[["battery_bdg"]]$percent_in),
         sep = "\n")
 
     for(i in seq_len(nrow(TEXT_MSG_USERS))) {
