@@ -179,14 +179,9 @@ server <- function(input, output) {
         # variables, in which case the badge status computation would be like
         # that of TEROS
         # This graph is shown when users click the "Battery" tab on the dashboard
-        dropbox_data()$aquatroll_200 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") -> aq200
 
-        aquatroll <- dropbox_data()$aquatroll_filtered
-
-        dropbox_data()$aquatroll_600 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
-            bind_rows(aq200) -> full_trolls_long
+        full_trolls_long <- bind_rows(dropbox_data()$aquatroll_200_long,
+                                      dropbox_data()$aquatroll_600_long)
 
         if(nrow(full_trolls_long) > 1) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -320,22 +315,20 @@ server <- function(input, output) {
     output$troll_table <- renderDataTable({
         autoInvalidate()
 
-        dropbox_data()$aquatroll_200 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") %>%
+        dropbox_data()$aquatroll_200_long %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
-            select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) -> aq200_long
+            select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
+            aq200_long
 
-        dropbox_data()$aquatroll_600 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
+        dropbox_data()$aquatroll_600_long %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
             select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) %>%
-            bind_rows(aq200_long) -> trolls
-
-        trolls %>%
+            bind_rows(aq200_long) %>%
+            # at this point we have the full trolls dataset in long form
             arrange(Timestamp) %>%
             pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"), names_from = "Timestamp", values_from = "value")
     })
@@ -345,22 +338,14 @@ server <- function(input, output) {
 
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            dropbox_data()$aquatroll_200 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") -> aq200
-
-            dropbox_data()$aquatroll_600 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
-                bind_rows(aq200) -> full_trolls_long
-
-            dropbox_data()$aquatroll_200 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") %>%
+            dropbox_data()$aquatroll_200_long %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
-                select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) -> aq200_long
+                select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
+                aq200_long
 
-            dropbox_data()$aquatroll_600 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
+            dropbox_data()$aquatroll_600_long %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
@@ -368,13 +353,18 @@ server <- function(input, output) {
                 bind_rows(aq200_long) -> trolls
 
             trolls %>%
-                pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"), names_from = "Timestamp", values_from = "value") %>%
+                pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"),
+                            names_from = "Timestamp", values_from = "value") %>%
                 slice(input$troll_table_rows_selected) %>%
                 select(variable, Well_Name) ->
                 aqsensor_selected
 
-            full_trolls_long %>%
-                filter(Well_Name %in% aqsensor_selected$Well_Name, variable %in% aqsensor_selected$variable) %>%
+            # Get the full long-form trolls data, filter for what is selected
+            # in the table, and plot
+            dropbox_data()$aquatroll_200_long %>%
+                bind_rows(dropbox_data()$aquatroll_600_long) %>%
+                filter(Well_Name %in% aqsensor_selected$Well_Name,
+                       variable %in% aqsensor_selected$variable) %>%
                 ggplot(aes(Timestamp, value, group = interaction(Well_Name, variable), color = Well_Name)) +
                 geom_line() +
                 xlab("") +
