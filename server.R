@@ -8,6 +8,8 @@ server <- function(input, output) {
     autoInvalidate <- reactiveTimer(15 * 60 * 1000)
     alertInvalidate <- reactiveTimer(60 * 60 * 1000)
 
+    # ------------------ Read in sensor data -----------------------------
+
     dropbox_data <- reactive({
 
         # Invalidate and re-execute this reactive expression every time the
@@ -49,7 +51,7 @@ server <- function(input, output) {
     # gearServer is defined in R/gear_module.R
     progress <- gearServer("gear")
 
-    # ------------------ Dashboard graphs -----------------------------
+    # ------------------ Progress circle -----------------------------
 
     observeEvent({
         input$prog_button
@@ -65,6 +67,8 @@ server <- function(input, output) {
 
         update_progress("circle", circleval)
     })
+
+    # ------------------ Main dashboard bad sensor tables --------------------
 
     output$sapflow_bad_sensors <- DT::renderDataTable({
 
@@ -92,7 +96,8 @@ server <- function(input, output) {
             filter(Timestamp > with_tz(Sys.time(), tzone = "EST") - FLAG_TIME_WINDOW * 60 * 60,
                    Timestamp < with_tz(Sys.time(), tzone = "EST"))  -> battery
 
-        battery[!between(battery$BattV_Avg, min(VOLTAGE_RANGE), max(VOLTAGE_RANGE)), ] %>% select(Logger) -> bounds
+        battery[!between(battery$BattV_Avg, min(VOLTAGE_RANGE), max(VOLTAGE_RANGE)), ] %>%
+            select(Logger) -> bounds
 
         battery[is.na(battery$BattV_Avg), ] %>% select(Logger) -> nas
 
@@ -101,6 +106,8 @@ server <- function(input, output) {
         datatable(vals, options = list(searching = FALSE, pageLength = 5))
     })
 
+
+    # ------------------ Main dashboard graphs ---------------------------
 
     output$sapflow_plot <- renderPlotly({
         # Average sapflow data by plot and 15 minute interval
@@ -235,6 +242,9 @@ server <- function(input, output) {
         plotly::ggplotly(b)
     })
 
+
+    # ------------------ Sapflow tab table and graph -----------------------------
+
     output$sapflow_table <- DT::renderDataTable(datatable({
         autoInvalidate()
 
@@ -269,6 +279,9 @@ server <- function(input, output) {
         }
         plotly::ggplotly(b)
     })
+
+
+    # ------------------ TEROS tab table and graph -----------------------------
 
     output$teros_table <- renderDataTable({
         autoInvalidate()
@@ -311,6 +324,9 @@ server <- function(input, output) {
         }
         plotly::ggplotly(b)
     })
+
+
+    # ------------------ Aquatroll tab table and graph -----------------------------
 
     output$troll_table <- renderDataTable({
         autoInvalidate()
@@ -377,6 +393,9 @@ server <- function(input, output) {
         plotly::ggplotly(b)
     })
 
+
+    # ------------------ Battery tab table and graph -----------------------------
+
     output$btable <- DT::renderDataTable({
         autoInvalidate()
 
@@ -430,6 +449,7 @@ server <- function(input, output) {
                  icon = icon("car-battery")
         )
     })
+
 
     # ------------------ Text alerts -----------------------------
 
