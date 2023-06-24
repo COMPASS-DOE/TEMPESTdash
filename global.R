@@ -10,6 +10,7 @@ library(readr)
 library(lubridate)
 library(rdrop2)
 library(shinybusy)
+library(plotly)
 
 if(!require("compasstools")) {
     stop("Need to remotes::install_github('COMPASS-DOE/compasstools')")
