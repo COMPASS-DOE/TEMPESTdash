@@ -1,11 +1,22 @@
 # Data processing
 # Compute badge data, etc. starting from the raw-ish sapflux, TEROS, etc. data
 
+# Utility function used throughout the code: filter a dataset to a recent
+# window going from `latest_ts` (by default right now)
+# This assumes there's a `Timestamp` column in `x`
+filter_recent_timestamps <- function(x, window,
+                                     latest_ts = with_tz(Sys.time(), tzone = "EST")) {
+    filter(x, Timestamp > latest_ts - window * 60 * 60,
+           Timestamp < latest_ts)
+}
+
+# All the compute_ functions take the raw data as well as `latest_ts`
+# in case we want to be able to look at past data (although such functionality
+# doesn't exist yet)
 compute_sapflow <- function(sapflow, latest_ts) {
 
     sapflow %>%
-        filter(Timestamp > latest_ts - FLAG_TIME_WINDOW * 60 * 60,
-               Timestamp < latest_ts) ->
+        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) ->
         sapflow_filtered
 
     sapflow_filtered %>%
@@ -45,8 +56,7 @@ compute_teros <- function(teros, latest_ts) {
     # variables within a single dataset. We compute out-of-limits for each
     # variable, and then combine to a single value and badge color
     teros %>%
-        filter(Timestamp > latest_ts - FLAG_TIME_WINDOW * 60 * 60,
-               Timestamp < latest_ts) %>%
+        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) %>%
         left_join(TEROS_RANGE, by = "variable") ->
         teros_filtered
 
@@ -87,8 +97,7 @@ compute_aquatroll <- function(aquatroll, latest_ts) {
         select(Timestamp, Logger_ID, Well_Name, Temp) %>%
         mutate(Sensor = 200) %>%
         bind_rows(a600) %>%
-        filter(Timestamp > latest_ts - FLAG_TIME_WINDOW * 60 * 60,
-               Timestamp < latest_ts) ->
+        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) ->
         aquatroll_filtered
 
     aquatroll_filtered %>%
@@ -128,8 +137,7 @@ compute_aquatroll <- function(aquatroll, latest_ts) {
 compute_battery <- function(battery, latest_ts) {
 
     battery %>%
-        filter(Timestamp > latest_ts - FLAG_TIME_WINDOW * 60 * 60,
-               Timestamp < latest_ts) ->
+        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) ->
         battery_filtered
 
     battery_filtered %>%
