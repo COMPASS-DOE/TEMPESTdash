@@ -146,7 +146,7 @@ server <- function(input, output) {
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
-                coord_cartesian(xlim = c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2)  ->
                 b
         } else {
@@ -181,7 +181,7 @@ server <- function(input, output) {
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
-                coord_cartesian(xlim = c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) ->
                 b
@@ -210,7 +210,7 @@ server <- function(input, output) {
                 summarise(Well_Name = Well_Name,
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
-                coord_cartesian(xlim = c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 shaded_flood_rect(ymin = min(AQUATROLL_TEMP_RANGE), ymax = max(AQUATROLL_TEMP_RANGE)) +
                 geom_line() +
                 facet_wrap(~variable, scales = "free") +
@@ -236,7 +236,7 @@ server <- function(input, output) {
                 shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
                 geom_line() +
                 labs(x = "", y = "Battery (V)", color = "Logger") +
-                coord_cartesian(xlim = c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 geom_hline(yintercept = VOLTAGE_RANGE, color = "grey", linetype = 2) ->
                 b
         } else {
@@ -257,6 +257,7 @@ server <- function(input, output) {
     output$sapflow_detail_graph <- renderPlotly({
 
         if(length(input$sapflow_table_rows_selected)) {
+            now <- with_tz(Sys.time(), tzone = "EST")
             dropbox_data()[["sapflow_table_data"]] %>%
                 slice(input$sapflow_table_rows_selected) %>%
                 pull(Tree_Code) ->
