@@ -13,10 +13,7 @@ filter_recent_timestamps <- function(x, window,
 # All the compute_ functions take the raw data as well as `latest_ts`
 # in case we want to be able to look at past data (although this functionality
 # doesn't exist yet)
-compute_sapflow <- function(sapflow_raw, latest_ts) {
-
-    # Cut the memory footprint of the sapflow data by almost half
-    sapflow <- select(sapflow_raw, Plot, Timestamp, Value, Tree_Code, Logger, Out_Of_Plot, Species, Grid_Square)
+compute_sapflow <- function(sapflow, latest_ts) {
 
     sapflow %>%
         filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) ->
@@ -53,13 +50,10 @@ compute_sapflow <- function(sapflow_raw, latest_ts) {
 }
 
 
-compute_teros <- function(teros_raw, latest_ts) {
+compute_teros <- function(teros, latest_ts) {
     # TEROS is awkward, because we only have one badge, but three
     # variables within a single dataset. We compute out-of-limits for each
     # variable, and then combine to a single value and badge color
-
-    # Cut the memory footprint of the TEROS data by almost half
-    teros <- select(teros_raw, Timestamp, Plot, ID, Grid_Square, Logger, variable, Depth, value)
 
     teros %>%
         filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) %>%

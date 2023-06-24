@@ -17,7 +17,7 @@ if(!require("compasstools")) {
 library(compasstools)
 
 
-# The TESTING flag causes the server to load static data in test-data/
+# The TESTING flag causes the server to load static data in offline-data/
 TESTING <- FALSE
 # Check if we're running in a testing or continuous integration environment
 TESTING <- TESTING || isTRUE(getOption("shiny.testmode"))
