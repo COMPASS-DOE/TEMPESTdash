@@ -1,13 +1,11 @@
-# This is the user-interface definition of the TEMPEST data dashboard
-# June 2022
+# User interface code for the TEMPEST data dashboard
+# June 2023
 
 library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
 library(dplyr)
-library(dygraphs)
 library(shinyWidgets)
-library(dygraphs)
 library(shinybusy)
 library(shinyalert)
 library(gmailr)
