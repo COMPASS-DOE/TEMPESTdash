@@ -119,8 +119,7 @@ server <- function(input, output) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
             sapflow %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, Logger, Timestamp_rounded) %>%
                 summarise(Value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
@@ -155,8 +154,7 @@ server <- function(input, output) {
                 # Certain versions of plotly seem to have a bug and produce
                 # a tidyr::pivot error when there's a 'variable' column; rename
                 rename(var = variable) %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, var, Logger, Timestamp_rounded) %>%
                 summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
@@ -194,8 +192,7 @@ server <- function(input, output) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
             full_trolls_long %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
                 summarise(Well_Name = Well_Name,
@@ -224,8 +221,7 @@ server <- function(input, output) {
         if(nrow(battery)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
             battery %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
                 annotate("rect", fill = "#BBE7E6", alpha = 0.7,
                          xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
