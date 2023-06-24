@@ -2,7 +2,6 @@ library(readr)
 library(lubridate)
 library(dplyr)
 library(tidyr)
-set.seed(7)
 
 # This only needs to be done once
 teros_inventory <- read_csv("design_doc_copies/TEROS_Network_Location copy.csv",
