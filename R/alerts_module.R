@@ -48,8 +48,7 @@ alertsServer <- function(id) {
 # Parameter dd is the dropbox_data() reactive from the server
 send_alerts <- function(dd) {
     msg <- paste(
-        paste0("System status as of: ",
-               with_tz(Sys.time(), tzone = "America/New_York"), " EDT"),
+        paste("System status as of", Sys.time()),
         "",
         paste0("Sapflow: ", dd()$sapflow_bdg$percent_in),
         paste0("TEROS: ", dd()$teros_bdg$percent_in),
