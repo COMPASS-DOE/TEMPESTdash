@@ -81,7 +81,7 @@ server <- function(input, output) {
 
     output$sapflow_bad_sensors <- DT::renderDataTable({
 
-        dropbox_data()$sapflow %>%
+        dropbox_data()[["sapflow"]] %>%
             filter_recent_timestamps(FLAG_TIME_WINDOW) ->
             sapflow
 
@@ -91,17 +91,17 @@ server <- function(input, output) {
     })
 
     output$teros_bad_sensors <- DT::renderDataTable({
-        dropbox_data()$teros_bad_sensors %>%
+        dropbox_data()[["teros_bad_sensors"]] %>%
             datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
     output$troll_bad_sensors <- DT::renderDataTable({
-        dropbox_data()$aquatroll_bad_sensors %>%
+        dropbox_data()[["aquatroll_bad_sensors"]] %>%
             datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
     output$batt_bad_sensors <- DT::renderDataTable({
-        dropbox_data()$battery %>%
+        dropbox_data()[["battery"]] %>%
             filter_recent_timestamps(FLAG_TIME_WINDOW) ->
             battery
 
@@ -122,7 +122,7 @@ server <- function(input, output) {
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
 
-        sapflow <- dropbox_data()$sapflow
+        sapflow <- dropbox_data()[["sapflow"]]
 
         if(nrow(sapflow)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -154,7 +154,7 @@ server <- function(input, output) {
         # one facet per sensor (temperature, moisture, conductivity)
         # This graph is shown when users click the "TEROS" tab on the dashboard
 
-        teros <- dropbox_data()$teros
+        teros <- dropbox_data()[["teros"]]
 
         if(nrow(teros) > 1) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -194,8 +194,8 @@ server <- function(input, output) {
         # that of TEROS
         # This graph is shown when users click the "Battery" tab on the dashboard
 
-        full_trolls_long <- bind_rows(dropbox_data()$aquatroll_200_long,
-                                      dropbox_data()$aquatroll_600_long)
+        full_trolls_long <- bind_rows(dropbox_data()[["aquatroll_200_long"]],
+                                      dropbox_data()[["aquatroll_600_long"]])
 
         if(nrow(full_trolls_long) > 1) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -225,7 +225,7 @@ server <- function(input, output) {
     output$battery_plot <- renderPlotly({
         # Battery voltages, from the sapflow data
         # This graph is shown when users click the "Battery" tab on the dashboard
-        battery <- dropbox_data()$battery
+        battery <- dropbox_data()[["battery"]]
 
         if(nrow(battery)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
@@ -253,7 +253,7 @@ server <- function(input, output) {
     output$sapflow_table <- DT::renderDataTable(datatable({
         autoInvalidate()
 
-        dropbox_data()$sapflow_table_data
+        dropbox_data()[["sapflow_table_data"]]
     }))
 
     output$sapflow_detail_graph <- renderPlotly({
@@ -261,12 +261,12 @@ server <- function(input, output) {
         if(length(input$sapflow_table_rows_selected)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            dropbox_data()$sapflow_table_data %>%
+            dropbox_data()[["sapflow_table_data"]] %>%
                 slice(input$sapflow_table_rows_selected) %>%
                 pull(Tree_Code) ->
                 trees_selected
 
-            dropbox_data()$sapflow %>%
+            dropbox_data()[["sapflow"]] %>%
                 filter(Tree_Code %in% trees_selected) %>%
                 ggplot(aes(Timestamp, Value, group = Tree_Code, color = Plot)) +
                 geom_rect(aes(xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
@@ -291,7 +291,7 @@ server <- function(input, output) {
     output$teros_table <- renderDataTable({
         autoInvalidate()
 
-        dropbox_data()$teros %>%
+        dropbox_data()[["teros"]] %>%
             group_by(ID, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
@@ -306,7 +306,7 @@ server <- function(input, output) {
         if(length(input$teros_table_rows_selected)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            dropbox_data()$teros %>%
+            dropbox_data()[["teros"]] %>%
                 group_by(ID, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
@@ -317,7 +317,7 @@ server <- function(input, output) {
                 select(variable, ID) ->
                 tsensor_selected
 
-            dropbox_data()$teros %>%
+            dropbox_data()[["teros"]] %>%
                 filter(ID %in% tsensor_selected$ID, variable %in% tsensor_selected$variable) %>%
                 ggplot(aes(Timestamp, value, group = interaction(ID, variable), color = ID)) +
                 geom_line() +
@@ -336,14 +336,14 @@ server <- function(input, output) {
     output$troll_table <- DT::renderDataTable({
         autoInvalidate()
 
-        dropbox_data()$aquatroll_200_long %>%
+        dropbox_data()[["aquatroll_200_long"]] %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
             select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
             aq200_long
 
-        dropbox_data()$aquatroll_600_long %>%
+        dropbox_data()[["aquatroll_600_long"]] %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
@@ -351,7 +351,8 @@ server <- function(input, output) {
             bind_rows(aq200_long) %>%
             # at this point we have the full trolls dataset in long form
             arrange(Timestamp) %>%
-            pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"), names_from = "Timestamp", values_from = "value")
+            pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"),
+                        names_from = "Timestamp", values_from = "value")
     })
 
     output$troll_detail_graph <- renderPlotly({
@@ -359,14 +360,14 @@ server <- function(input, output) {
 
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            dropbox_data()$aquatroll_200_long %>%
+            dropbox_data()[["aquatroll_200_long"]] %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
                 select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
                 aq200_long
 
-            dropbox_data()$aquatroll_600_long %>%
+            dropbox_data()[["aquatroll_600_long"]] %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
@@ -382,8 +383,8 @@ server <- function(input, output) {
 
             # Get the full long-form trolls data, filter for what is selected
             # in the table, and plot
-            dropbox_data()$aquatroll_200_long %>%
-                bind_rows(dropbox_data()$aquatroll_600_long) %>%
+            dropbox_data()[["aquatroll_200_long"]] %>%
+                bind_rows(dropbox_data()[["aquatroll_600_long"]]) %>%
                 filter(Well_Name %in% aqsensor_selected$Well_Name,
                        variable %in% aqsensor_selected$variable) %>%
                 ggplot(aes(Timestamp, value, group = interaction(Well_Name, variable), color = Well_Name)) +
@@ -404,7 +405,7 @@ server <- function(input, output) {
     output$btable <- DT::renderDataTable({
         autoInvalidate()
 
-        dropbox_data()$battery %>%
+        dropbox_data()[["battery"]] %>%
             select(Timestamp, BattV_Avg, Plot, Logger) %>%
             group_by(Plot, Logger) %>%
             distinct() %>%
@@ -427,30 +428,30 @@ server <- function(input, output) {
     # ------------------ Dashboard badges -----------------------------
 
     output$sapflow_bdg <- renderValueBox({
-        valueBox(dropbox_data()$sapflow_bdg$percent_in[1],
+        valueBox(dropbox_data()[["sapflow_bdg"]]$percent_in[1],
                  "Sapflow",
-                 color = dropbox_data()$sapflow_bdg$color[1],
+                 color = dropbox_data()[["sapflow_bdg"]]$color[1],
                  icon = icon("tree")
         )
     })
     output$teros_bdg <- renderValueBox({
-        valueBox(dropbox_data()$teros_bdg$percent_in[1],
+        valueBox(dropbox_data()[["teros_bdg"]]$percent_in[1],
                  "TEROS",
-                 color = dropbox_data()$teros_bdg$color[1],
+                 color = dropbox_data()[["teros_bdg"]]$color[1],
                  icon = icon("temperature-high")
         )
     })
     output$aquatroll_bdg <- renderValueBox({
-        valueBox(dropbox_data()$aquatroll_bdg$percent_in[1],
+        valueBox(dropbox_data()[["aquatroll_bdg"]]$percent_in[1],
                  "AquaTroll",
-                 color = dropbox_data()$aquatroll_bdg$color[1],
+                 color = dropbox_data()[["aquatroll_bdg"]]$color[1],
                  icon = icon("water")
         )
     })
     output$battery_bdg <- renderValueBox({
-        valueBox(dropbox_data()$battery_bdg$percent_in[1],
+        valueBox(dropbox_data()[["battery_bdg"]]$percent_in[1],
                  "Battery",
-                 color = dropbox_data()$battery_bdg$color[1],
+                 color = dropbox_data()[["battery_bdg"]]$color[1],
                  icon = icon("car-battery")
         )
     })
