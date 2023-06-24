@@ -2,10 +2,6 @@ library(readr)
 library(lubridate)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-library(plotly)
-library(kableExtra)
-set.seed(7)
 
 # This only needs to be done once
 teros_inventory <- read_csv("design_doc_copies/TEROS_Network_Location copy.csv",
@@ -22,6 +18,7 @@ process_teros <- function(token, datadir) {
                                                       dropbox_token = token,
                                                       progress_bar = progress)
 
+
     teros_primitive %>%
         left_join(teros_inventory, by = c("Logger" = "Data Logger ID",
                                           "Data_Table_ID" = "Terosdata table channel")) %>%
@@ -35,10 +32,8 @@ process_teros <- function(token, datadir) {
                                                             "Data_Table_ID" = "Terosdata table channel"))
     if(nrow(nomatch) > 0) {
         warning("There were logger/channel combinations that I couldn't find in teros_inventory.csv:")
-        nomatch %>%
-            distinct(Logger, Data_Table_ID) %>%
-            kable()
     }
 
-    return(teros)
+    # Cut the memory footprint of the TEROS data by almost half and return
+    select(teros, Timestamp, Plot, ID, Grid_Square, Logger, variable, Depth, value)
 }

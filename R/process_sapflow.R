@@ -4,9 +4,6 @@ library(readr)
 library(lubridate)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-library(plotly)
-library(kableExtra)
 
 # This only needs to be done once
 sf_inventory <- read_csv("design_doc_copies/sapflow_inventory copy.csv", col_types = "ccdcdddclc")
@@ -33,13 +30,8 @@ process_sapflow <- function(token, datadir) {
 
     if(nrow(nomatch_ports) > 0) {
         warning("There were logger/port combinations that I couldn't find in sapflow_inventory.csv:")
-        nomatch_ports %>%
-            distinct(Logger, Port) %>%
-            kable()
     }
 
-    # Add some extra time information
-    sapflow %>%
-        mutate(Date = as.Date(Timestamp),
-               Hour = hour(Timestamp) + minute(Timestamp) / 60)
+    # Cut the memory footprint of the sapflow data by almost half and return
+    select(sapflow, Plot, Timestamp, Value, Tree_Code, Logger, BattV_Avg, Out_Of_Plot, Species, Grid_Square)
 }
