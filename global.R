@@ -9,8 +9,6 @@ library(DT)
 library(readr)
 library(lubridate)
 library(rdrop2)
-library(dygraphs)
-library(xts)
 library(shinybusy)
 
 if(!require("compasstools")) {
