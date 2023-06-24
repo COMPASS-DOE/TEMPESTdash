@@ -73,12 +73,10 @@ mapsServer <- function(id, STATUS_MAP, dd) {
                               map_overlays = map_overlays(),
                               map_items = map_items(),
                               # inputs from the Dropbox data
-                              sapflow_data = dd$sapflow_filtered,
+                              sapflow_data = dd$sapflow,
                               sapflow_bad_sensors = dd$sapflow_bad_sensors,
-                              teros_data = dd$teros_filtered,
-                              teros_bad_sensors = dd$teros_bad_sensors,
-                              aquatroll_data = dd$aquatroll_filtered,
-                              aquatroll_bad_sensors = dd$aquatroll_bad_sensors)
+                              teros_data = dd$teros,
+                              teros_bad_sensors = dd$teros_bad_sensors)
             })
             return(plt)
 
@@ -141,9 +139,7 @@ make_plot_map <- function(STATUS_MAP,
                           sapflow_data,
                           sapflow_bad_sensors,
                           teros_data,
-                          teros_bad_sensors,
-                          aquatroll_data,
-                          aquatroll_bad_sensors) {
+                          teros_bad_sensors) {
 
     show_rose <- "map_rose" %in% map_overlays
     show_trees <- "map_trees" %in% map_overlays
@@ -239,7 +235,7 @@ make_plot_map <- function(STATUS_MAP,
         teros_data %>%
             # Isolate plot and variable user wants, and then all data in last hour
             filter(Plot == plot_name, variable == data_map_variable) %>%
-            filter(Timestamp >= current_time - 1 * 60 * 60) %>%
+            filter_recent_timestamps(window = 1) %>%
             # For each sensor, get its last timestamp of data
             group_by(ID) %>%
             filter(Timestamp == max(Timestamp)) %>%
