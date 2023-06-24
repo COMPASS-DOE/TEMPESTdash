@@ -3,9 +3,6 @@ library(readr)
 library(lubridate)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-library(plotly)
-library(kableExtra)
 
 # This only needs to be done once
 troll_inventory <- read_csv("design_doc_copies/aquatroll_inventory copy.csv",
