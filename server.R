@@ -48,10 +48,10 @@ server <- function(input, output) {
         c(sapflow_list, teros_list, aquatroll_list, battery_list)
     })
 
+    # ------------------ Gear and progress circle --------------------------
+
     # gearServer is defined in R/gear_module.R
     progress <- gearServer("gear")
-
-    # ------------------ Progress circle -----------------------------
 
     observeEvent({
         input$prog_button
@@ -73,10 +73,10 @@ server <- function(input, output) {
     output$sapflow_bad_sensors <- DT::renderDataTable({
 
         dropbox_data()$sapflow %>%
-            filter(Timestamp > with_tz(Sys.time(), tzone = "EST") - FLAG_TIME_WINDOW * 60 * 60,
-                   Timestamp < with_tz(Sys.time(), tzone = "EST")) -> sapflow
+            filter_recent_timestamps(FLAG_TIME_WINDOW) ->
+            sapflow
 
-        bad_sensors(sapflow, sapflow$Value, "Tree_Code", limits = SAPFLOW_RANGE) -> vals
+        vals <- bad_sensors(sapflow, sapflow$Value, "Tree_Code", limits = SAPFLOW_RANGE)
 
         datatable(vals, options = list(searching = FALSE, pageLength = 5))
     })
@@ -93,15 +93,15 @@ server <- function(input, output) {
 
     output$batt_bad_sensors <- DT::renderDataTable({
         dropbox_data()$battery %>%
-            filter(Timestamp > with_tz(Sys.time(), tzone = "EST") - FLAG_TIME_WINDOW * 60 * 60,
-                   Timestamp < with_tz(Sys.time(), tzone = "EST"))  -> battery
+            filter_recent_timestamps(FLAG_TIME_WINDOW) ->
+            battery
 
         battery[!between(battery$BattV_Avg, min(VOLTAGE_RANGE), max(VOLTAGE_RANGE)), ] %>%
-            select(Logger) -> bounds
+            select(Logger) ->
+            bounds
 
-        battery[is.na(battery$BattV_Avg), ] %>% select(Logger) -> nas
-
-        unique(bind_rows(nas, bounds)) -> vals
+        nas <- battery[is.na(battery$BattV_Avg), ] %>% select(Logger)
+        vals <- unique(bind_rows(nas, bounds))
 
         datatable(vals, options = list(searching = FALSE, pageLength = 5))
     })
@@ -324,7 +324,7 @@ server <- function(input, output) {
 
     # ------------------ Aquatroll tab table and graph -----------------------------
 
-    output$troll_table <- renderDataTable({
+    output$troll_table <- DT::renderDataTable({
         autoInvalidate()
 
         dropbox_data()$aquatroll_200_long %>%
