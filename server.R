@@ -118,6 +118,17 @@ server <- function(input, output) {
 
     # ------------------ Main dashboard graphs ---------------------------
 
+    # Define a semi-transparent rectangle to indicate flood start/stop
+    # We have to use a geom_rect to accommodate the faceted TEROS plot
+    # Each plot passes the ymin and ymax (bc plotly won't do -Inf/Inf) to `...`
+    shaded_flood_rect <- function(...)
+        reactive({
+            geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                      aes(xmin = progress()$EVENT_START,
+                          xmax = progress()$EVENT_STOP,
+                          ...))
+        })() # remove the reactive before returning
+
     output$sapflow_plot <- renderPlotly({
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
@@ -133,11 +144,7 @@ server <- function(input, output) {
                 group_by(Plot, Logger, Timestamp_rounded) %>%
                 summarise(Value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, Value, color = Plot, group = Logger)) +
-                geom_rect(aes(xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
-                              ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)),
-                          fill = "#BBE7E6",
-                          alpha = 0.7,
-                          col = "#BBE7E6") +
+                shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
                 coord_cartesian(xlim = c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
@@ -167,12 +174,11 @@ server <- function(input, output) {
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, var, Logger, Timestamp_rounded) %>%
                 summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
-                left_join(TEROS_RANGE, by = c("var" = "variable")) -> tdat
+                left_join(TEROS_RANGE, by = c("var" = "variable")) ->
+                tdat
 
             ggplot(tdat) +
-                geom_rect(group = 1,
-                          aes(xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
-                              ymin = low, ymax = high), fill = "#BBE7E6", alpha = 0.7, col = "#BBE7E6") +
+                shaded_flood_rect(ymin = low, ymax = high) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
@@ -208,9 +214,7 @@ server <- function(input, output) {
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
                 coord_cartesian(xlim = c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
-                annotate("rect", fill = "#BBE7E6", alpha = 0.7,
-                         xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
-                         ymin = min(AQUATROLL_TEMP_RANGE), ymax = max(AQUATROLL_TEMP_RANGE)) +
+                shaded_flood_rect(ymin = min(AQUATROLL_TEMP_RANGE), ymax = max(AQUATROLL_TEMP_RANGE)) +
                 geom_line() + facet_wrap(~variable, scales = "free") +
                 xlab("") ->
                 b
@@ -232,9 +236,7 @@ server <- function(input, output) {
             battery %>%
                 filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
-                annotate("rect", fill = "#BBE7E6", alpha = 0.7,
-                         xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
-                         ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
+                shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
                 geom_line() +
                 labs(x = "", y = "Battery (V)", color = "Logger") +
                 coord_cartesian(xlim = c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
@@ -269,11 +271,7 @@ server <- function(input, output) {
             dropbox_data()[["sapflow"]] %>%
                 filter(Tree_Code %in% trees_selected) %>%
                 ggplot(aes(Timestamp, Value, group = Tree_Code, color = Plot)) +
-                geom_rect(aes(xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
-                              ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)),
-                          fill = "#BBE7E6",
-                          alpha = 0.7,
-                          col = "#BBE7E6") +
+                shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
                 xlim(c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
