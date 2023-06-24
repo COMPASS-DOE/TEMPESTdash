@@ -21,6 +21,15 @@ server <- function(input, output) {
             teros <- readRDS("offline-data/teros")
             aquatroll <- readRDS("offline-data/aquatroll")
             battery <- readRDS("offline-data/battery")
+
+            # Adjust the timestamps of the testing data so that they're current,
+            # i.e. as if real-time data
+            adjust <- function(x) x$Timestamp + (Sys.time() - max(x$Timestamp))
+            sapflow$Timestamp <- adjust(sapflow)
+            teros$Timestamp <- adjust(teros)
+            aquatroll$aquatroll_600$Timestamp <- adjust(aquatroll$aquatroll_600)
+            aquatroll$aquatroll_200$Timestamp <- adjust(aquatroll$aquatroll_200)
+            battery$Timestamp <- adjust(battery)
         } else {
             sapflow <- withProgress(process_sapflow(token, datadir), message = "Updating sapflow...")
             teros <- withProgress(process_teros(token, datadir), message = "Updating TEROS...")
