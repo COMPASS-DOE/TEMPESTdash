@@ -104,8 +104,21 @@ compute_aquatroll <- function(aquatroll, latest_ts) {
         summarise(flag_sensors(Temp, limits = AQUATROLL_TEMP_RANGE)) ->
         aquatroll_bdg
 
+    # The pivoted data are used repeatedly in the server, so provide too
+    aquatroll$aquatroll_200 %>%
+        pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"),
+                     names_to = "variable", values_to = "value") ->
+        aquatroll_200_long
+
+    aquatroll$aquatroll_600 %>%
+        pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"),
+                     names_to = "variable", values_to = "value") ->
+        aquatroll_600_long
+
     list(aquatroll_600 = aquatroll$aquatroll_600,
          aquatroll_200 = aquatroll$aquatroll_200,
+         aquatroll_600_long = aquatroll_600_long,
+         aquatroll_200_long = aquatroll_200_long,
          aquatroll_filtered = aquatroll_filtered,
          aquatroll_bad_sensors = aquatroll_bad_sensors,
          aquatroll_bdg = aquatroll_bdg)
