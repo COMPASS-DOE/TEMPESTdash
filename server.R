@@ -8,6 +8,8 @@ server <- function(input, output) {
     autoInvalidate <- reactiveTimer(15 * 60 * 1000)
     alertInvalidate <- reactiveTimer(60 * 60 * 1000)
 
+    # ------------------ Read in sensor data -----------------------------
+
     dropbox_data <- reactive({
 
         # Invalidate and re-execute this reactive expression every time the
@@ -46,10 +48,10 @@ server <- function(input, output) {
         c(sapflow_list, teros_list, aquatroll_list, battery_list)
     })
 
+    # ------------------ Gear and progress circle --------------------------
+
     # gearServer is defined in R/gear_module.R
     progress <- gearServer("gear")
-
-    # ------------------ Dashboard graphs -----------------------------
 
     observeEvent({
         input$prog_button
@@ -66,13 +68,15 @@ server <- function(input, output) {
         update_progress("circle", circleval)
     })
 
+    # ------------------ Main dashboard bad sensor tables --------------------
+
     output$sapflow_bad_sensors <- DT::renderDataTable({
 
         dropbox_data()$sapflow %>%
-            filter(Timestamp > with_tz(Sys.time(), tzone = "EST") - FLAG_TIME_WINDOW * 60 * 60,
-                   Timestamp < with_tz(Sys.time(), tzone = "EST")) -> sapflow
+            filter_recent_timestamps(FLAG_TIME_WINDOW) ->
+            sapflow
 
-        bad_sensors(sapflow, sapflow$Value, "Tree_Code", limits = SAPFLOW_RANGE) -> vals
+        vals <- bad_sensors(sapflow, sapflow$Value, "Tree_Code", limits = SAPFLOW_RANGE)
 
         datatable(vals, options = list(searching = FALSE, pageLength = 5))
     })
@@ -89,18 +93,21 @@ server <- function(input, output) {
 
     output$batt_bad_sensors <- DT::renderDataTable({
         dropbox_data()$battery %>%
-            filter(Timestamp > with_tz(Sys.time(), tzone = "EST") - FLAG_TIME_WINDOW * 60 * 60,
-                   Timestamp < with_tz(Sys.time(), tzone = "EST"))  -> battery
+            filter_recent_timestamps(FLAG_TIME_WINDOW) ->
+            battery
 
-        battery[!between(battery$BattV_Avg, min(VOLTAGE_RANGE), max(VOLTAGE_RANGE)), ] %>% select(Logger) -> bounds
+        battery[!between(battery$BattV_Avg, min(VOLTAGE_RANGE), max(VOLTAGE_RANGE)), ] %>%
+            select(Logger) ->
+            bounds
 
-        battery[is.na(battery$BattV_Avg), ] %>% select(Logger) -> nas
-
-        unique(bind_rows(nas, bounds)) -> vals
+        nas <- battery[is.na(battery$BattV_Avg), ] %>% select(Logger)
+        vals <- unique(bind_rows(nas, bounds))
 
         datatable(vals, options = list(searching = FALSE, pageLength = 5))
     })
 
+
+    # ------------------ Main dashboard graphs ---------------------------
 
     output$sapflow_plot <- renderPlotly({
         # Average sapflow data by plot and 15 minute interval
@@ -112,8 +119,7 @@ server <- function(input, output) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
             sapflow %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, Logger, Timestamp_rounded) %>%
                 summarise(Value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
@@ -148,8 +154,7 @@ server <- function(input, output) {
                 # Certain versions of plotly seem to have a bug and produce
                 # a tidyr::pivot error when there's a 'variable' column; rename
                 rename(var = variable) %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, var, Logger, Timestamp_rounded) %>%
                 summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
@@ -179,21 +184,15 @@ server <- function(input, output) {
         # variables, in which case the badge status computation would be like
         # that of TEROS
         # This graph is shown when users click the "Battery" tab on the dashboard
-        dropbox_data()$aquatroll_200 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") -> aq200
 
-        aquatroll <- dropbox_data()$aquatroll_filtered
-
-        dropbox_data()$aquatroll_600 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
-            bind_rows(aq200) -> full_trolls_long
+        full_trolls_long <- bind_rows(dropbox_data()$aquatroll_200_long,
+                                      dropbox_data()$aquatroll_600_long)
 
         if(nrow(full_trolls_long) > 1) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
             full_trolls_long %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
                 summarise(Well_Name = Well_Name,
@@ -222,8 +221,7 @@ server <- function(input, output) {
         if(nrow(battery)) {
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
             battery %>%
-                filter(Timestamp > latest_ts - GRAPH_TIME_WINDOW * 60 * 60,
-                       Timestamp < latest_ts) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
                 annotate("rect", fill = "#BBE7E6", alpha = 0.7,
                          xmin = progress()$EVENT_START, xmax = progress()$EVENT_STOP,
@@ -239,6 +237,9 @@ server <- function(input, output) {
 
         plotly::ggplotly(b)
     })
+
+
+    # ------------------ Sapflow tab table and graph -----------------------------
 
     output$sapflow_table <- DT::renderDataTable(datatable({
         autoInvalidate()
@@ -274,6 +275,9 @@ server <- function(input, output) {
         }
         plotly::ggplotly(b)
     })
+
+
+    # ------------------ TEROS tab table and graph -----------------------------
 
     output$teros_table <- renderDataTable({
         autoInvalidate()
@@ -317,25 +321,26 @@ server <- function(input, output) {
         plotly::ggplotly(b)
     })
 
-    output$troll_table <- renderDataTable({
+
+    # ------------------ Aquatroll tab table and graph -----------------------------
+
+    output$troll_table <- DT::renderDataTable({
         autoInvalidate()
 
-        dropbox_data()$aquatroll_200 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") %>%
+        dropbox_data()$aquatroll_200_long %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
-            select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) -> aq200_long
+            select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
+            aq200_long
 
-        dropbox_data()$aquatroll_600 %>%
-            pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
+        dropbox_data()$aquatroll_600_long %>%
             group_by(Well_Name, variable) %>%
             slice_tail(n = 10) %>%
             ungroup() %>%
             select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) %>%
-            bind_rows(aq200_long) -> trolls
-
-        trolls %>%
+            bind_rows(aq200_long) %>%
+            # at this point we have the full trolls dataset in long form
             arrange(Timestamp) %>%
             pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"), names_from = "Timestamp", values_from = "value")
     })
@@ -345,22 +350,14 @@ server <- function(input, output) {
 
             latest_ts <- with_tz(Sys.time(), tzone = "EST")
 
-            dropbox_data()$aquatroll_200 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") -> aq200
-
-            dropbox_data()$aquatroll_600 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
-                bind_rows(aq200) -> full_trolls_long
-
-            dropbox_data()$aquatroll_200 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity"), names_to = "variable", values_to = "value") %>%
+            dropbox_data()$aquatroll_200_long %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
-                select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) -> aq200_long
+                select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
+                aq200_long
 
-            dropbox_data()$aquatroll_600 %>%
-                pivot_longer(cols = c("Temp", "Pressure_psi", "Salinity", "DO_mgl"), names_to = "variable", values_to = "value") %>%
+            dropbox_data()$aquatroll_600_long %>%
                 group_by(Well_Name, variable) %>%
                 slice_tail(n = 10) %>%
                 ungroup() %>%
@@ -368,13 +365,18 @@ server <- function(input, output) {
                 bind_rows(aq200_long) -> trolls
 
             trolls %>%
-                pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"), names_from = "Timestamp", values_from = "value") %>%
+                pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"),
+                            names_from = "Timestamp", values_from = "value") %>%
                 slice(input$troll_table_rows_selected) %>%
                 select(variable, Well_Name) ->
                 aqsensor_selected
 
-            full_trolls_long %>%
-                filter(Well_Name %in% aqsensor_selected$Well_Name, variable %in% aqsensor_selected$variable) %>%
+            # Get the full long-form trolls data, filter for what is selected
+            # in the table, and plot
+            dropbox_data()$aquatroll_200_long %>%
+                bind_rows(dropbox_data()$aquatroll_600_long) %>%
+                filter(Well_Name %in% aqsensor_selected$Well_Name,
+                       variable %in% aqsensor_selected$variable) %>%
                 ggplot(aes(Timestamp, value, group = interaction(Well_Name, variable), color = Well_Name)) +
                 geom_line() +
                 xlab("") +
@@ -386,6 +388,9 @@ server <- function(input, output) {
         }
         plotly::ggplotly(b)
     })
+
+
+    # ------------------ Battery tab table and graph -----------------------------
 
     output$btable <- DT::renderDataTable({
         autoInvalidate()
@@ -440,6 +445,7 @@ server <- function(input, output) {
                  icon = icon("car-battery")
         )
     })
+
 
     # ------------------ Text alerts -----------------------------
 
