@@ -2,7 +2,7 @@
 # Compute badge data, etc. starting from the raw-ish sapflux, TEROS, etc. data
 
 # Utility function used throughout the code: filter a dataset to a recent
-# window going from `latest_ts` (by default right now)
+# window (hours) going from `latest_ts` (by default right now)
 # This assumes there's a `Timestamp` column in `x`
 filter_recent_timestamps <- function(x, window,
                                      latest_ts = with_tz(Sys.time(), tzone = "EST")) {
@@ -11,7 +11,7 @@ filter_recent_timestamps <- function(x, window,
 }
 
 # All the compute_ functions take the raw data as well as `latest_ts`
-# in case we want to be able to look at past data (although such functionality
+# in case we want to be able to look at past data (although this functionality
 # doesn't exist yet)
 compute_sapflow <- function(sapflow, latest_ts) {
 
@@ -44,7 +44,6 @@ compute_sapflow <- function(sapflow, latest_ts) {
         sapflow_table_data
 
     list(sapflow = sapflow,
-         sapflow_filtered = sapflow_filtered,
          sapflow_bdg = sapflow_bdg,
          sapflow_table_data = sapflow_table_data,
          sapflow_bad_sensors = sapflow_bad_sensors)
@@ -81,7 +80,6 @@ compute_teros <- function(teros, latest_ts) {
         teros_bad_sensors
 
     list(teros = teros,
-         teros_filtered = teros_filtered,
          teros_bad_sensors = teros_bad_sensors,
          teros_bdg = teros_bdg)
 }
@@ -128,7 +126,6 @@ compute_aquatroll <- function(aquatroll, latest_ts) {
          aquatroll_200 = aquatroll$aquatroll_200,
          aquatroll_600_long = aquatroll_600_long,
          aquatroll_200_long = aquatroll_200_long,
-         aquatroll_filtered = aquatroll_filtered,
          aquatroll_bad_sensors = aquatroll_bad_sensors,
          aquatroll_bdg = aquatroll_bdg)
 }
