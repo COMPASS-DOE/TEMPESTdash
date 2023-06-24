@@ -1,4 +1,4 @@
-# This is the server of the TEMPEST data dashboard
+# Server code for the TEMPEST data dashboard
 # June 2023
 
 source("global.R")
@@ -47,11 +47,11 @@ server <- function(input, output) {
 
         # Do limits testing and compute data needed for badges
         # compute_sapflow() etc. are defined in R/data_processing.R
-        latest_ts <- with_tz(Sys.time(), tzone = "EST")
-        sapflow_list <- compute_sapflow(sapflow, latest_ts)
-        teros_list <- compute_teros(teros, latest_ts)
-        aquatroll_list <- compute_aquatroll(aquatroll, latest_ts)
-        battery_list <- compute_battery(battery, latest_ts)
+        now <- with_tz(Sys.time(), tzone = "EST")
+        sapflow_list <- compute_sapflow(sapflow, now)
+        teros_list <- compute_teros(teros, now)
+        aquatroll_list <- compute_aquatroll(aquatroll, now)
+        battery_list <- compute_battery(battery, now)
 
         # Return data and badge information
         c(sapflow_list, teros_list, aquatroll_list, battery_list)
@@ -136,8 +136,7 @@ server <- function(input, output) {
         sapflow <- dropbox_data()[["sapflow"]]
 
         if(nrow(sapflow)) {
-            latest_ts <- with_tz(Sys.time(), tzone = "EST")
-
+            now <- with_tz(Sys.time(), tzone = "EST")
             sapflow %>%
                 filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
@@ -147,7 +146,7 @@ server <- function(input, output) {
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
-                coord_cartesian(xlim = c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2)  ->
                 b
         } else {
@@ -164,7 +163,7 @@ server <- function(input, output) {
         teros <- dropbox_data()[["teros"]]
 
         if(nrow(teros) > 1) {
-            latest_ts <- with_tz(Sys.time(), tzone = "EST")
+            now <- with_tz(Sys.time(), tzone = "EST")
             teros %>%
                 left_join(TEROS_RANGE, by = "variable") %>%
                 # Certain versions of plotly seem to have a bug and produce
@@ -182,14 +181,13 @@ server <- function(input, output) {
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
-                coord_cartesian(xlim = c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) ->
                 b
         } else {
             b <- NO_DATA_GRAPH
         }
-
         plotly::ggplotly(b)
     })
 
@@ -204,8 +202,7 @@ server <- function(input, output) {
                                       dropbox_data()[["aquatroll_600_long"]])
 
         if(nrow(full_trolls_long) > 1) {
-            latest_ts <- with_tz(Sys.time(), tzone = "EST")
-
+            now <- with_tz(Sys.time(), tzone = "EST")
             full_trolls_long %>%
                 filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
@@ -213,16 +210,16 @@ server <- function(input, output) {
                 summarise(Well_Name = Well_Name,
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
-                coord_cartesian(xlim = c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 shaded_flood_rect(ymin = min(AQUATROLL_TEMP_RANGE), ymax = max(AQUATROLL_TEMP_RANGE)) +
-                geom_line() + facet_wrap(~variable, scales = "free") +
+                geom_line() +
+                facet_wrap(~variable, scales = "free") +
                 xlab("") ->
                 b
 
         } else {
             b <- NO_DATA_GRAPH
         }
-
         plotly::ggplotly(b)
     })
 
@@ -232,20 +229,19 @@ server <- function(input, output) {
         battery <- dropbox_data()[["battery"]]
 
         if(nrow(battery)) {
-            latest_ts <- with_tz(Sys.time(), tzone = "EST")
+            now <- with_tz(Sys.time(), tzone = "EST")
             battery %>%
                 filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
                 shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
                 geom_line() +
                 labs(x = "", y = "Battery (V)", color = "Logger") +
-                coord_cartesian(xlim = c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 geom_hline(yintercept = VOLTAGE_RANGE, color = "grey", linetype = 2) ->
                 b
         } else {
             b <- NO_DATA_GRAPH
         }
-
         plotly::ggplotly(b)
     })
 
@@ -261,8 +257,7 @@ server <- function(input, output) {
     output$sapflow_detail_graph <- renderPlotly({
 
         if(length(input$sapflow_table_rows_selected)) {
-            latest_ts <- with_tz(Sys.time(), tzone = "EST")
-
+            now <- with_tz(Sys.time(), tzone = "EST")
             dropbox_data()[["sapflow_table_data"]] %>%
                 slice(input$sapflow_table_rows_selected) %>%
                 pull(Tree_Code) ->
@@ -274,7 +269,7 @@ server <- function(input, output) {
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
-                xlim(c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) +
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
                 geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2) ->
                 b
         } else {
@@ -295,14 +290,14 @@ server <- function(input, output) {
             ungroup() %>%
             select(Timestamp, ID, Plot, variable, value, Logger, Grid_Square) %>%
             arrange(Timestamp) %>%
-            pivot_wider(id_cols = c("ID", "Plot", "variable", "Grid_Square"), names_from = "Timestamp", values_from = "value")
-        #}
+            pivot_wider(id_cols = c("ID", "Plot", "variable", "Grid_Square"),
+                        names_from = "Timestamp", values_from = "value")
     })
 
     output$teros_detail_graph <- renderPlotly({
 
         if(length(input$teros_table_rows_selected)) {
-            latest_ts <- with_tz(Sys.time(), tzone = "EST")
+            now <- with_tz(Sys.time(), tzone = "EST")
 
             dropbox_data()[["teros"]] %>%
                 group_by(ID, variable) %>%
@@ -310,7 +305,8 @@ server <- function(input, output) {
                 ungroup() %>%
                 select(Timestamp, ID, variable, value, Logger, Grid_Square) %>%
                 arrange(Timestamp) %>%
-                pivot_wider(id_cols = c("ID", "variable", "Grid_Square"), names_from = "Timestamp", values_from = "value") %>%
+                pivot_wider(id_cols = c("ID", "variable", "Grid_Square"),
+                            names_from = "Timestamp", values_from = "value") %>%
                 slice(input$teros_table_rows_selected) %>%
                 select(variable, ID) ->
                 tsensor_selected
@@ -320,7 +316,7 @@ server <- function(input, output) {
                 ggplot(aes(Timestamp, value, group = interaction(ID, variable), color = ID)) +
                 geom_line() +
                 xlab("") +
-                xlim(c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) ->
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) ->
                 b
         } else {
             b <- NO_DATA_GRAPH
@@ -356,7 +352,7 @@ server <- function(input, output) {
     output$troll_detail_graph <- renderPlotly({
         if(length(input$troll_table_rows_selected)) {
 
-            latest_ts <- with_tz(Sys.time(), tzone = "EST")
+            now <- with_tz(Sys.time(), tzone = "EST")
 
             dropbox_data()[["aquatroll_200_long"]] %>%
                 group_by(Well_Name, variable) %>%
@@ -389,7 +385,7 @@ server <- function(input, output) {
                 geom_line() +
                 xlab("") +
                 labs(color = "Well Name") +
-                xlim(c(latest_ts - GRAPH_TIME_WINDOW * 60 * 60, latest_ts)) ->
+                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) ->
                 b
         } else {
             b <- NO_DATA_GRAPH
@@ -410,7 +406,8 @@ server <- function(input, output) {
             slice_tail(n = 10) %>%
             ungroup() %>%
             arrange(Timestamp) %>%
-            pivot_wider(id_cols = c("Plot", "Logger"), names_from = "Timestamp", values_from = "BattV_Avg") %>%
+            pivot_wider(id_cols = c("Plot", "Logger"),
+                        names_from = "Timestamp", values_from = "BattV_Avg") %>%
             datatable()
     })
 
@@ -458,7 +455,6 @@ server <- function(input, output) {
     # ------------------ Text alerts -----------------------------
 
     observeEvent({
-
         # This will calculate values and send out messages to everyone in "new_user" df
         # could just have people not choose what they want alerts for?
         #initial_alert()
