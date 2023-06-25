@@ -33,6 +33,11 @@ ui <- dashboardPage(
             tabItem(
                 tabName = "dashboard",
                 fluidRow(
+                    # Clearly display the time of the dashboard
+                    # If in testing mode, this will be set to the latest timestamp
+                    # of the offline data
+                    textOutput("DD"),
+
                     # Front page badges; their attributes are computed by the server
                     valueBoxOutput("sapflow_bdg", width = 3),
                     valueBoxOutput("teros_bdg", width = 3),

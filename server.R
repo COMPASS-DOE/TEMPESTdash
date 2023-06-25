@@ -5,31 +5,32 @@ source("global.R")
 
 server <- function(input, output) {
 
-    autoInvalidate <- reactiveTimer(15 * 60 * 1000)
+    dataInvalidate <- reactiveTimer(15 * 60 * 1000)
     alertInvalidate <- reactiveTimer(60 * 60 * 1000)
 
     # ------------------ Read in sensor data -----------------------------
 
-    dropbox_data <- reactive({
+    DASHBOARD_DATETIME <- reactive({
+        # Invalidate and re-execute this reactive when timer fires
+        dataInvalidate()
 
-        # Invalidate and re-execute this reactive expression every time the
-        # timer fires
-        autoInvalidate()
+        if(TESTING) {
+            # This is the latest time in the test data
+            ymd_hms("2023-06-23 12:30:00", tz = "EST")
+        } else {
+            Sys.time()
+        }
+    })
+
+    dropbox_data <- reactive({
+        # Invalidate and re-execute this reactive when timer fires
+        dataInvalidate()
 
         if(TESTING) {
             sapflow <- readRDS("offline-data/sapflow")
             teros <- readRDS("offline-data/teros")
             aquatroll <- readRDS("offline-data/aquatroll")
             battery <- readRDS("offline-data/battery")
-
-            # Adjust the timestamps of the testing data so that they're current,
-            # i.e. as if real-time data
-            adjust <- function(x) x$Timestamp + (Sys.time() - max(x$Timestamp))
-            sapflow$Timestamp <- adjust(sapflow)
-            teros$Timestamp <- adjust(teros)
-            aquatroll$aquatroll_600$Timestamp <- adjust(aquatroll$aquatroll_600)
-            aquatroll$aquatroll_200$Timestamp <- adjust(aquatroll$aquatroll_200)
-            battery$Timestamp <- adjust(battery)
         } else {
             sapflow <- withProgress(process_sapflow(token, datadir), message = "Updating sapflow...")
             teros <- withProgress(process_teros(token, datadir), message = "Updating TEROS...")
@@ -47,11 +48,11 @@ server <- function(input, output) {
 
         # Do limits testing and compute data needed for badges
         # compute_sapflow() etc. are defined in R/data_processing.R
-        now <- with_tz(Sys.time(), tzone = "EST")
-        sapflow_list <- compute_sapflow(sapflow, now)
-        teros_list <- compute_teros(teros, now)
-        aquatroll_list <- compute_aquatroll(aquatroll, now)
-        battery_list <- compute_battery(battery, now)
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        sapflow_list <- compute_sapflow(sapflow, ddt)
+        teros_list <- compute_teros(teros, ddt)
+        aquatroll_list <- compute_aquatroll(aquatroll, ddt)
+        battery_list <- compute_battery(battery, ddt)
 
         # Return data and badge information
         c(sapflow_list, teros_list, aquatroll_list, battery_list)
@@ -64,9 +65,9 @@ server <- function(input, output) {
 
     observeEvent({
         input$prog_button
-        autoInvalidate() # for actual app, we can have multiple triggers
+        dataInvalidate() # for actual app, we can have multiple triggers
     }, {
-        elapsed <- difftime(with_tz(Sys.time(), tzone = "EST"),
+        elapsed <- difftime(reactive({ DASHBOARD_DATETIME() })(),
                             progress()$EVENT_START,
                             units = "hours")
         circleval <- round(as.numeric(elapsed) / progress()$EVENT_HOURS, 2)
@@ -79,10 +80,15 @@ server <- function(input, output) {
 
     # ------------------ Main dashboard bad sensor tables --------------------
 
+    output$DD <- reactive({
+        strftime(DASHBOARD_DATETIME(), '%F %T', usetz = TRUE)
+    })
+
     output$sapflow_bad_sensors <- DT::renderDataTable({
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
 
         dropbox_data()[["sapflow"]] %>%
-            filter_recent_timestamps(FLAG_TIME_WINDOW) ->
+            filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
             sapflow
 
         vals <- bad_sensors(sapflow, sapflow$Value, "Tree_Code", limits = SAPFLOW_RANGE)
@@ -101,8 +107,9 @@ server <- function(input, output) {
     })
 
     output$batt_bad_sensors <- DT::renderDataTable({
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
         dropbox_data()[["battery"]] %>%
-            filter_recent_timestamps(FLAG_TIME_WINDOW) ->
+            filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
             battery
 
         battery[!between(battery$BattV_Avg, min(VOLTAGE_RANGE), max(VOLTAGE_RANGE)), ] %>%
@@ -136,9 +143,9 @@ server <- function(input, output) {
         sapflow <- dropbox_data()[["sapflow"]]
 
         if(nrow(sapflow)) {
-            now <- with_tz(Sys.time(), tzone = "EST")
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
             sapflow %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, Logger, Timestamp_rounded) %>%
                 summarise(Value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
@@ -146,7 +153,7 @@ server <- function(input, output) {
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
-                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2)  ->
                 b
         } else {
@@ -163,13 +170,13 @@ server <- function(input, output) {
         teros <- dropbox_data()[["teros"]]
 
         if(nrow(teros) > 1) {
-            now <- with_tz(Sys.time(), tzone = "EST")
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
             teros %>%
                 left_join(TEROS_RANGE, by = "variable") %>%
                 # Certain versions of plotly seem to have a bug and produce
                 # a tidyr::pivot error when there's a 'variable' column; rename
                 rename(var = variable) %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, var, Logger, Timestamp_rounded) %>%
                 summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
@@ -181,7 +188,7 @@ server <- function(input, output) {
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
-                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) ->
                 b
@@ -202,15 +209,15 @@ server <- function(input, output) {
                                       dropbox_data()[["aquatroll_600_long"]])
 
         if(nrow(full_trolls_long) > 1) {
-            now <- with_tz(Sys.time(), tzone = "EST")
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
             full_trolls_long %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
                 summarise(Well_Name = Well_Name,
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
-                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 shaded_flood_rect(ymin = min(AQUATROLL_TEMP_RANGE), ymax = max(AQUATROLL_TEMP_RANGE)) +
                 geom_line() +
                 facet_wrap(~variable, scales = "free") +
@@ -229,14 +236,14 @@ server <- function(input, output) {
         battery <- dropbox_data()[["battery"]]
 
         if(nrow(battery)) {
-            now <- with_tz(Sys.time(), tzone = "EST")
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
             battery %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW) %>%
+                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
                 shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
                 geom_line() +
                 labs(x = "", y = "Battery (V)", color = "Logger") +
-                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(yintercept = VOLTAGE_RANGE, color = "grey", linetype = 2) ->
                 b
         } else {
@@ -249,7 +256,7 @@ server <- function(input, output) {
     # ------------------ Sapflow tab table and graph -----------------------------
 
     output$sapflow_table <- DT::renderDataTable(datatable({
-        autoInvalidate()
+        dataInvalidate()
 
         dropbox_data()[["sapflow_table_data"]]
     }))
@@ -257,7 +264,7 @@ server <- function(input, output) {
     output$sapflow_detail_graph <- renderPlotly({
 
         if(length(input$sapflow_table_rows_selected)) {
-            now <- with_tz(Sys.time(), tzone = "EST")
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
             dropbox_data()[["sapflow_table_data"]] %>%
                 slice(input$sapflow_table_rows_selected) %>%
                 pull(Tree_Code) ->
@@ -269,7 +276,7 @@ server <- function(input, output) {
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
-                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2) ->
                 b
         } else {
@@ -282,7 +289,7 @@ server <- function(input, output) {
     # ------------------ TEROS tab table and graph -----------------------------
 
     output$teros_table <- renderDataTable({
-        autoInvalidate()
+        dataInvalidate()
 
         dropbox_data()[["teros"]] %>%
             group_by(ID, variable) %>%
@@ -297,7 +304,7 @@ server <- function(input, output) {
     output$teros_detail_graph <- renderPlotly({
 
         if(length(input$teros_table_rows_selected)) {
-            now <- with_tz(Sys.time(), tzone = "EST")
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
 
             dropbox_data()[["teros"]] %>%
                 group_by(ID, variable) %>%
@@ -316,7 +323,7 @@ server <- function(input, output) {
                 ggplot(aes(Timestamp, value, group = interaction(ID, variable), color = ID)) +
                 geom_line() +
                 xlab("") +
-                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) ->
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
                 b
         } else {
             b <- NO_DATA_GRAPH
@@ -328,7 +335,7 @@ server <- function(input, output) {
     # ------------------ Aquatroll tab table and graph -----------------------------
 
     output$troll_table <- DT::renderDataTable({
-        autoInvalidate()
+        dataInvalidate()
 
         dropbox_data()[["aquatroll_200_long"]] %>%
             group_by(Well_Name, variable) %>%
@@ -352,7 +359,7 @@ server <- function(input, output) {
     output$troll_detail_graph <- renderPlotly({
         if(length(input$troll_table_rows_selected)) {
 
-            now <- with_tz(Sys.time(), tzone = "EST")
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
 
             dropbox_data()[["aquatroll_200_long"]] %>%
                 group_by(Well_Name, variable) %>%
@@ -385,7 +392,7 @@ server <- function(input, output) {
                 geom_line() +
                 xlab("") +
                 labs(color = "Well Name") +
-                xlim(c(now - GRAPH_TIME_WINDOW * 60 * 60, now)) ->
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
                 b
         } else {
             b <- NO_DATA_GRAPH
@@ -397,7 +404,7 @@ server <- function(input, output) {
     # ------------------ Battery tab table and graph -----------------------------
 
     output$btable <- DT::renderDataTable({
-        autoInvalidate()
+        dataInvalidate()
 
         dropbox_data()[["battery"]] %>%
             select(Timestamp, BattV_Avg, Plot, Logger) %>%
@@ -414,9 +421,13 @@ server <- function(input, output) {
     # ------------------ Maps tab -----------------------------
 
     # mapsServer is defined in R/maps_module.R
-    statusmap <- mapsServer("mapsTab", STATUS_MAP = TRUE, dd = dropbox_data())
+    statusmap <- mapsServer("mapsTab", STATUS_MAP = TRUE,
+                            dd = dropbox_data(),
+                            ddt = DASHBOARD_DATETIME())
     output$status_map <- renderPlot(statusmap())
-    datamap <- mapsServer("mapsTab", STATUS_MAP = FALSE, dd = dropbox_data())
+    datamap <- mapsServer("mapsTab", STATUS_MAP = FALSE,
+                          dd = dropbox_data(),
+                          ddt = DASHBOARD_DATETIME())
     output$data_map <- renderPlot(datamap())
 
 
