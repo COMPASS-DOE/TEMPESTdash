@@ -99,7 +99,7 @@ plot_info <- tribble(
 )
 
 # Tree data - read it only once
-readr::read_csv("design_doc_copies/inventory copy.csv",
+readr::read_csv("design-doc-copies/inventory copy.csv",
                 col_types = "ccdcdDccdDcDdcDdcDdclcc") %>%
     filter(In_Plot, Status_2023 %in% c("LI", "DS")) %>%
     select(Plot, Grid, Species_code, Tag, DBH_2023) %>%
@@ -107,7 +107,7 @@ readr::read_csv("design_doc_copies/inventory copy.csv",
     map_tree_data
 
 # Mapping from sapflow to trees
-readr::read_csv("design_doc_copies/sapflow_inventory copy.csv",
+readr::read_csv("design-doc-copies/sapflow_inventory copy.csv",
                 col_types = "ccdcdddclc") %>%
     select(Tree_Code, Tag) ->
     sapflow_inv
@@ -117,7 +117,7 @@ library(cowplot)
 # Do the compass rose transparency and rotation calculations (plot-specific)
 # once and store, IF magick is available
 if(require(magick)) {
-    rose_dat <- magick::image_read("map_data/compass-rose.png")
+    rose_dat <- magick::image_read("map-data/compass-rose.png")
     roses <- list()
     for(i in seq_len(nrow(plot_info))) {
         img <- magick::image_rotate(rose_dat,
