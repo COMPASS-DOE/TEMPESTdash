@@ -15,8 +15,9 @@ server <- function(input, output) {
         dataInvalidate()
 
         if(TESTING) {
-            # This is the latest time in the test data
-            ymd_hms("2023-06-24 12:30:00", tz = "EST")
+            # Get the latest time in the test data
+            battery <- readRDS("offline-data/battery")
+            max(battery$Timestamp)
         } else {
             Sys.time()
         }
