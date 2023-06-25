@@ -16,7 +16,7 @@ server <- function(input, output) {
 
         if(TESTING) {
             # This is the latest time in the test data
-            ymd_hms("2023-06-23 12:30:00", tz = "EST")
+            ymd_hms("2023-06-24 12:30:00", tz = "EST")
         } else {
             Sys.time()
         }
@@ -140,12 +140,13 @@ server <- function(input, output) {
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
 
-        sapflow <- dropbox_data()[["sapflow"]]
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        dropbox_data()[["sapflow"]] %>%
+            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+            sapflow
 
         if(nrow(sapflow)) {
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
             sapflow %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, Logger, Timestamp_rounded) %>%
                 summarise(Value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
@@ -167,16 +168,17 @@ server <- function(input, output) {
         # one facet per sensor (temperature, moisture, conductivity)
         # This graph is shown when users click the "TEROS" tab on the dashboard
 
-        teros <- dropbox_data()[["teros"]]
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        dropbox_data()[["teros"]] %>%
+            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+            teros
 
-        if(nrow(teros) > 1) {
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
+        if(nrow(teros)) {
             teros %>%
                 left_join(TEROS_RANGE, by = "variable") %>%
                 # Certain versions of plotly seem to have a bug and produce
                 # a tidyr::pivot error when there's a 'variable' column; rename
                 rename(var = variable) %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, var, Logger, Timestamp_rounded) %>%
                 summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
@@ -205,13 +207,14 @@ server <- function(input, output) {
         # that of TEROS
         # This graph is shown when users click the "Battery" tab on the dashboard
 
-        full_trolls_long <- bind_rows(dropbox_data()[["aquatroll_200_long"]],
-                                      dropbox_data()[["aquatroll_600_long"]])
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        bind_rows(dropbox_data()[["aquatroll_200_long"]],
+                  dropbox_data()[["aquatroll_600_long"]]) %>%
+            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+            full_trolls_long
 
         if(nrow(full_trolls_long) > 1) {
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
             full_trolls_long %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
                 summarise(Well_Name = Well_Name,
@@ -233,12 +236,13 @@ server <- function(input, output) {
     output$battery_plot <- renderPlotly({
         # Battery voltages, from the sapflow data
         # This graph is shown when users click the "Battery" tab on the dashboard
-        battery <- dropbox_data()[["battery"]]
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        dropbox_data()[["battery"]] %>%
+            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+            battery
 
         if(nrow(battery)) {
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
             battery %>%
-                filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
                 shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
                 geom_line() +

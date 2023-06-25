@@ -28,7 +28,9 @@ badge_color <- function(frac_out, badge_colors = BADGE_COLORS) {
                   c(badge_colors, 1.01), # 1.01 so that 1 is included in the highest interval
                   labels = names(badge_colors),
                   right = FALSE)
-    as.character(colors)
+    x <- as.character(colors)
+    x[is.na(x)] <- "black"
+    x
 }
 
 # Identify which observations are outside of limits
@@ -66,8 +68,7 @@ flag_sensors <- function(values, limits, na.rm = FALSE) {
                 percent_in = paste0(round(fraction_in * 100, 0), "%"),
                 color = badge_color(frac_out))
     # 'NaN' entries usually mean no data
-    invalids <- is.nan(x$fraction_in)
+    invalids <- !is.finite(x$fraction_in)
     x$percent_in[invalids] <- "--"
-    x$color[invalids] <- "black"
     x
 }

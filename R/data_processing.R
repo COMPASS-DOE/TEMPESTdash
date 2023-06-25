@@ -63,7 +63,10 @@ compute_teros <- function(teros, ddt) {
         group_by(variable) %>%
         summarise(flag_sensors(value, limits = c(low[1], high[1]))) %>%
         summarise(fraction_in = weighted.mean(fraction_in, n)) %>%
-        mutate(percent_in = paste0(round(fraction_in * 100, 0), "%"),
+        # average the fraction in values
+        mutate(percent_in = if_else(all(is.finite(fraction_in)),
+                                    paste0(round(fraction_in * 100, 0), "%"),
+                                    "--"),
                color = badge_color(1 - fraction_in)) ->
         teros_bdg
 
