@@ -81,8 +81,9 @@ server <- function(input, output) {
 
     # ------------------ Main dashboard bad sensor tables --------------------
 
-    output$DD <- reactive({
-        strftime(DASHBOARD_DATETIME(), '%F %T', usetz = TRUE)
+    output$DDT <- reactive({
+        # Ensure that DDT (dashboard datetime) is displayed EST
+        strftime(with_tz(DASHBOARD_DATETIME(), "EST"), '%F %T', usetz = TRUE)
     })
 
     output$sapflow_bad_sensors <- DT::renderDataTable({

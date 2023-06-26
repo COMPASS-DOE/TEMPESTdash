@@ -36,7 +36,7 @@ ui <- dashboardPage(
                     # Clearly display the time of the dashboard
                     # If in testing mode, this will be set to the latest timestamp
                     # of the offline data
-                    textOutput("DD"),
+                    textOutput("DDT"),
 
                     # Front page badges; their attributes are computed by the server
                     valueBoxOutput("sapflow_bdg", width = 3),
