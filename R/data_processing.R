@@ -2,21 +2,20 @@
 # Compute badge data, etc. starting from the raw-ish sapflux, TEROS, etc. data
 
 # Utility function used throughout the code: filter a dataset to a recent
-# window (hours) going from `latest_ts` (by default right now)
+# window (hours) going from `ddt` (dashboard date time)
 # This assumes there's a `Timestamp` column in `x`
-filter_recent_timestamps <- function(x, window,
-                                     latest_ts = with_tz(Sys.time(), tzone = "EST")) {
-    filter(x, Timestamp > latest_ts - window * 60 * 60,
-           Timestamp < latest_ts)
+filter_recent_timestamps <- function(x, window, ddt) {
+    filter(x, Timestamp > ddt - window * 60 * 60,
+           Timestamp < ddt)
 }
 
 # All the compute_ functions take the raw data as well as `latest_ts`
 # in case we want to be able to look at past data (although this functionality
 # doesn't exist yet)
-compute_sapflow <- function(sapflow, latest_ts) {
+compute_sapflow <- function(sapflow, ddt) {
 
     sapflow %>%
-        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) ->
+        filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
         sapflow_filtered
 
     sapflow_filtered %>%
@@ -50,13 +49,13 @@ compute_sapflow <- function(sapflow, latest_ts) {
 }
 
 
-compute_teros <- function(teros, latest_ts) {
+compute_teros <- function(teros, ddt) {
     # TEROS is awkward, because we only have one badge, but three
     # variables within a single dataset. We compute out-of-limits for each
     # variable, and then combine to a single value and badge color
 
     teros %>%
-        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) %>%
+        filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) %>%
         left_join(TEROS_RANGE, by = "variable") ->
         teros_filtered
 
@@ -64,7 +63,10 @@ compute_teros <- function(teros, latest_ts) {
         group_by(variable) %>%
         summarise(flag_sensors(value, limits = c(low[1], high[1]))) %>%
         summarise(fraction_in = weighted.mean(fraction_in, n)) %>%
-        mutate(percent_in = paste0(round(fraction_in * 100, 0), "%"),
+        # average the fraction in values
+        mutate(percent_in = if_else(all(is.finite(fraction_in)),
+                                    paste0(round(fraction_in * 100, 0), "%"),
+                                    "--"),
                color = badge_color(1 - fraction_in)) ->
         teros_bdg
 
@@ -86,7 +88,7 @@ compute_teros <- function(teros, latest_ts) {
 }
 
 
-compute_aquatroll <- function(aquatroll, latest_ts) {
+compute_aquatroll <- function(aquatroll, ddt) {
     # Aquatroll is similar: one badge, two datasets
     aquatroll$aquatroll_600 %>%
         select(Timestamp, Logger_ID, Well_Name, Temp) %>%
@@ -96,7 +98,7 @@ compute_aquatroll <- function(aquatroll, latest_ts) {
         select(Timestamp, Logger_ID, Well_Name, Temp) %>%
         mutate(Sensor = 200) %>%
         bind_rows(a600) %>%
-        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) ->
+        filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
         aquatroll_filtered
 
     aquatroll_filtered %>%
@@ -132,10 +134,10 @@ compute_aquatroll <- function(aquatroll, latest_ts) {
 }
 
 
-compute_battery <- function(battery, latest_ts) {
+compute_battery <- function(battery, ddt) {
 
     battery %>%
-        filter_recent_timestamps(FLAG_TIME_WINDOW, latest_ts) ->
+        filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
         battery_filtered
 
     battery_filtered %>%

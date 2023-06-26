@@ -41,5 +41,9 @@ test_that("badge_color works", {
     bc <- c("green" = 0.0, "yellow" = 0.1, "red" = 0.3)
     vals <- c(-0.05, 0.0, 0.1, 0.2, 0.3, 0.4, 1.0, 1.05)
     x <- badge_color(vals, badge_colors = bc)
-    expect_identical(x, c(NA, "green", "yellow", "yellow", "red", "red", "red", NA))
+    expect_identical(x, c("black", "green", "yellow", "yellow", "red", "red", "red", "black"))
+
+    # Invalid data should get black
+    expect_identical(badge_color(NA_real_, bc), "black")
+    expect_identical(badge_color(NaN, bc), "black")
 })
