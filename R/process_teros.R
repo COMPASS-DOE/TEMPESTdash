@@ -4,7 +4,7 @@ library(dplyr)
 library(tidyr)
 
 # This only needs to be done once
-teros_inventory <- read_csv("design_doc_copies/TEROS_Network_Location copy.csv",
+teros_inventory <- read_csv("design-doc-copies/TEROS_Network_Location copy.csv",
                             col_types = "cccccddccccd")
 
 process_teros <- function(token, datadir) {

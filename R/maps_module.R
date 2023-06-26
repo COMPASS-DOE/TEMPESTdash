@@ -41,7 +41,7 @@ mapsUI <- function(id) {
 # Module server function - a fragment of server logic
 # Parameters: id, STATUS_MAP (a flag), and dd (dashboard data, outside of the maps module namespace)
 # see https://shiny.posit.co/r/articles/improve/modules/
-mapsServer <- function(id, STATUS_MAP, dd) {
+mapsServer <- function(id, STATUS_MAP, dd, ddt) {
     moduleServer(
         id,
         ## Below is the module function
@@ -72,6 +72,7 @@ mapsServer <- function(id, STATUS_MAP, dd) {
                               plot_name = plot_name(),
                               map_overlays = map_overlays(),
                               map_items = map_items(),
+                              ddt = ddt,
                               # inputs from the Dropbox data
                               sapflow_data = dd$sapflow,
                               sapflow_bad_sensors = dd$sapflow_bad_sensors,
@@ -99,7 +100,7 @@ plot_info <- tribble(
 )
 
 # Tree data - read it only once
-readr::read_csv("design_doc_copies/inventory copy.csv",
+readr::read_csv("design-doc-copies/inventory copy.csv",
                 col_types = "ccdcdDccdDcDdcDdcDdclcc") %>%
     filter(In_Plot, Status_2023 %in% c("LI", "DS")) %>%
     select(Plot, Grid, Species_code, Tag, DBH_2023) %>%
@@ -107,7 +108,7 @@ readr::read_csv("design_doc_copies/inventory copy.csv",
     map_tree_data
 
 # Mapping from sapflow to trees
-readr::read_csv("design_doc_copies/sapflow_inventory copy.csv",
+readr::read_csv("design-doc-copies/sapflow_inventory copy.csv",
                 col_types = "ccdcdddclc") %>%
     select(Tree_Code, Tag) ->
     sapflow_inv
@@ -117,7 +118,7 @@ library(cowplot)
 # Do the compass rose transparency and rotation calculations (plot-specific)
 # once and store, IF magick is available
 if(require(magick)) {
-    rose_dat <- magick::image_read("map_data/compass-rose.png")
+    rose_dat <- magick::image_read("map-data/compass-rose.png")
     roses <- list()
     for(i in seq_len(nrow(plot_info))) {
         img <- magick::image_rotate(rose_dat,
@@ -135,6 +136,7 @@ make_plot_map <- function(STATUS_MAP,
                           plot_name,
                           map_overlays,
                           map_items,
+                          ddt, # dashboard datetime
                           # inputs from the Dropbox data
                           sapflow_data,
                           sapflow_bad_sensors,
@@ -145,9 +147,6 @@ make_plot_map <- function(STATUS_MAP,
     show_trees <- "map_trees" %in% map_overlays
     show_teros <- "map_teros" %in% map_items
     show_sapflow <- "map_sapflow" %in% map_items
-
-    # Current time
-    current_time <- with_tz(Sys.time(), tzone = "EST")
 
     # Construct plotting grid, flipping things around as needed
     plot_dat <- expand.grid(plot = plot_name,
@@ -229,13 +228,14 @@ make_plot_map <- function(STATUS_MAP,
         # If user has selected a particular depth, filter to that
         if(teros_depth != "All") {
             teros_data <- filter(teros_data, Depth == as.numeric(teros_depth))
-            teros_bad_sensors <- filter(teros_bad_sensors, Depth == as.numeric(teros_depth))
+            teros_bad_sensors <- filter(teros_bad_sensors,
+                                        Depth == as.numeric(teros_depth))
         }
 
         teros_data %>%
             # Isolate plot and variable user wants, and then all data in last hour
             filter(Plot == plot_name, variable == data_map_variable) %>%
-            filter_recent_timestamps(window = 1) %>%
+            filter_recent_timestamps(window = 1, ddt) %>%
             # For each sensor, get its last timestamp of data
             group_by(ID) %>%
             filter(Timestamp == max(Timestamp)) %>%
@@ -250,7 +250,7 @@ make_plot_map <- function(STATUS_MAP,
             mutate(x = substr(Grid_Square, 1, 1), y = substr(Grid_Square, 2, 2)) ->
             td
 
-        p <- p + ggtitle(paste(plot_name, current_time))
+        p <- p + ggtitle(paste(plot_name, strftime(ddt, '%F %T', usetz = TRUE)))
         p <- p + geom_point(data = td,
                             na.rm = TRUE,
                             position = position_jitter(seed = 1234),
@@ -301,7 +301,7 @@ make_plot_map <- function(STATUS_MAP,
         sapflow_data %>%
             # Isolate plot and variable user wants, and then all data in last hour
             filter(Plot == plot_name) %>%
-            filter(Timestamp >= current_time - 1 * 60 * 60) %>%
+            filter(Timestamp >= ddt - 1 * 60 * 60) %>%
             # For each sensor, get its last timestamp of data
             group_by(Tree_Code) %>%
             filter(Timestamp == max(Timestamp)) %>%
@@ -320,7 +320,7 @@ make_plot_map <- function(STATUS_MAP,
         #     left_join(sapflow_inv, by = "Tag") %>%
         #     left_join(sdat, by = "Tree_Code") ->
         #     sdat
-        p <- p + ggtitle(paste(plot_name, current_time))
+        p <- p + ggtitle(paste(plot_name, strftime(ddt, '%F %T', usetz = TRUE)))
         p <- p + geom_point(data = sd_all,
                             na.rm = TRUE,
                             position = position_jitter(seed = 1234),
