@@ -81,7 +81,7 @@
     "sidebarItemExpanded": null
   },
   "output": {
-    "DDT": "2023-06-23 13:30:00 EDT",
+    "DDT": "2023-06-23 12:30:00 EST",
     "aquatroll_bdg": {
       "html": "<div class=\"small-box bg-green\">\n  <div class=\"inner\">\n    <h3>100%<\/h3>\n    <p>AquaTroll<\/p>\n  <\/div>\n  <div class=\"icon-large\">\n    <i class=\"fas fa-water\" role=\"presentation\" aria-label=\"water icon\"><\/i>\n  <\/div>\n<\/div>",
       "deps": [
