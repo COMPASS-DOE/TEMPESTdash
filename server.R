@@ -135,15 +135,14 @@ server <- function(input, output, session) {
     shaded_flood_rect <- function(...)
         reactive({
             geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+
                       aes(xmin = progress()$EVENT_START,
-                          xmax = progress()$EVENT_STOP,
-                          ...))
+                          xmax = progress()$EVENT_STOP, ...))
         })() # remove the reactive before returning
 
     output$sapflow_plot <- renderPlotly({
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
-
         ddt <- reactive({ DASHBOARD_DATETIME() })()
         dropbox_data()[["sapflow"]] %>%
             filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
@@ -158,7 +157,7 @@ server <- function(input, output, session) {
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2)  ->
                 b
         } else {
@@ -194,7 +193,7 @@ server <- function(input, output, session) {
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) ->
                 b
@@ -224,7 +223,7 @@ server <- function(input, output, session) {
                 summarise(Well_Name = Well_Name,
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 shaded_flood_rect(ymin = min(AQUATROLL_TEMP_RANGE), ymax = max(AQUATROLL_TEMP_RANGE)) +
                 geom_line() +
                 facet_wrap(~variable, scales = "free") +
@@ -251,7 +250,7 @@ server <- function(input, output, session) {
                 shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
                 geom_line() +
                 labs(x = "", y = "Battery (V)", color = "Logger") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(yintercept = VOLTAGE_RANGE, color = "grey", linetype = 2) ->
                 b
         } else {
