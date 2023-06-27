@@ -1,6 +1,8 @@
 # Test the gear server logic
 
-testServer(gearServer, {
+testServer(gearServer,
+           args = list(session = NULL, ddt_reactive = reactive(1)),
+           {
     # Set initial values, as if user entered them
     session$setInputs(event_date = "2023-06-23")
     session$setInputs(event_start = "06:00:00")

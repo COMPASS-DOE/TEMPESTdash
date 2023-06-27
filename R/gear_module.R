@@ -13,8 +13,7 @@ gearUI <- function(id) {
         circle = TRUE,
         status = "primary",
         dateInput(ns("event_date"),
-                  label = 'Event Date: yyyy-mm-dd',
-                  value = Sys.Date()
+                  label = "Event Date: yyyy-mm-dd"
         ),
         textInput(ns("event_start"),
                   label = h3("Event Start"),
@@ -27,11 +26,19 @@ gearUI <- function(id) {
 
 
 # Module server function - a fragment of server logic
-gearServer <- function(id) {
+gearServer <- function(id, session, ddt_reactive) {
+    stopifnot(is.reactive(ddt_reactive))
+
     moduleServer(
         id,
         ## Below is the module function
         function(input, output, session) {
+            # If the dashboard datetime has changed, update the default
+            # date input for EVENT_START.
+            observeEvent(ddt_reactive, {
+                updateDateInput(session, "event_date",
+                                value = as.Date(ddt_reactive()))
+            })
 
             gear_reactive <- reactive({
                 EVENT_START <- as_datetime(paste(input$event_date, input$event_start), tz = "EST")

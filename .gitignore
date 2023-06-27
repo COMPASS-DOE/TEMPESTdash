@@ -10,3 +10,6 @@
 # Dropbox token and OAuth things
 *.rds
 .httr-oauth
+
+# shinytest2
+_.new.png
