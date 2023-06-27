@@ -3,7 +3,7 @@
 
 source("global.R")
 
-server <- function(input, output) {
+server <- function(input, output, session) {
 
     dataInvalidate <- reactiveTimer(15 * 60 * 1000)
     alertInvalidate <- reactiveTimer(60 * 60 * 1000)
@@ -49,7 +49,7 @@ server <- function(input, output) {
 
         # Do limits testing and compute data needed for badges
         # compute_sapflow() etc. are defined in R/data_processing.R
-        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        ddt <- isolate({ DASHBOARD_DATETIME() })
         sapflow_list <- compute_sapflow(sapflow, ddt)
         teros_list <- compute_teros(teros, ddt)
         aquatroll_list <- compute_aquatroll(aquatroll, ddt)
@@ -62,7 +62,9 @@ server <- function(input, output) {
     # ------------------ Gear and progress circle --------------------------
 
     # gearServer is defined in R/gear_module.R
-    progress <- gearServer("gear")
+    # We pass it DASHBOARD_DATETIME (a reactive) so it can update
+    # its date input field if the datetime changes
+    progress <- gearServer("gear", session, DASHBOARD_DATETIME)
 
     observeEvent({
         input$prog_button
