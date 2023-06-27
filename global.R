@@ -21,7 +21,7 @@ library(compasstools)
 # The TESTING flag causes the server to load static data in offline-data/
 TESTING <- FALSE
 # Check if we're running in a testing or continuous integration environment
-TESTING <- TESTING || isTRUE(getOption("shiny.testmode"))
+TESTING <- TESTING || isTRUE(getOption("shiny.testmode")) # doesn't work?!?
 TESTING <- TESTING || Sys.getenv("CI") == "true"
 
 # Flooding event length (hours)
