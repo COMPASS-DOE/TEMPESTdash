@@ -5,8 +5,9 @@
 # window (hours) going from `ddt` (dashboard date time)
 # This assumes there's a `Timestamp` column in `x`
 filter_recent_timestamps <- function(x, window, ddt) {
+    stopifnot(window > 0)
     filter(x, Timestamp > ddt - window * 60 * 60,
-           Timestamp < ddt)
+           Timestamp <= ddt)
 }
 
 # All the compute_ functions take the raw data as well as `latest_ts`

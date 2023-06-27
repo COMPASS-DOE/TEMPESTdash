@@ -1,4 +1,3 @@
-# Test the lexical_sort function from R/example.R
 test_that("flag_sensors works", {
 
     # Basics: calculating fraction in and corresponding badge color
