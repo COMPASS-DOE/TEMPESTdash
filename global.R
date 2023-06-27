@@ -19,7 +19,7 @@ library(compasstools)
 
 
 # The TESTING flag causes the server to load static data in offline-data/
-TESTING <- FALSE
+TESTING <- TRUE
 # Check if we're running in a testing or continuous integration environment
 TESTING <- TESTING || isTRUE(getOption("shiny.testmode"))
 TESTING <- TESTING || Sys.getenv("CI") == "true"
