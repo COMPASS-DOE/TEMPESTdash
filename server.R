@@ -8,7 +8,24 @@ server <- function(input, output, session) {
     dataInvalidate <- reactiveTimer(15 * 60 * 1000)
     alertInvalidate <- reactiveTimer(60 * 60 * 1000)
 
+    # ------------------ Check whether testing --------------------------
+
+    # Note 1. TESTING is defined in the global environment (so "<<-")
+    # Note 2. These checks have to be here as shiny.testmode isn't set until server runs
+    # Check if we're running in a Shiny testing...
+    TESTING <<- TESTING || isTRUE(getOption("shiny.testmode"))
+    # ...or continuous integration environment
+    TESTING <<- TESTING || Sys.getenv("CI") == "true"
+
     # ------------------ Read in sensor data -----------------------------
+
+    # The server normally accesses the SERC Dropbox to download data
+    # If we are TESTING, however, skip this and use local test data only
+    if(!TESTING) {
+        datadir <- "TEMPEST_PNNL_Data/Current_Data"
+        token <- readRDS("droptoken.rds")
+        cursor <- drop_dir(datadir, cursor = TRUE, dtoken = token)
+    }
 
     DASHBOARD_DATETIME <- reactive({
         # Invalidate and re-execute this reactive when timer fires

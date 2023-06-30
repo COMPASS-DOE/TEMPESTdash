@@ -17,12 +17,10 @@ if(!require("compasstools")) {
 }
 library(compasstools)
 
-
-# The TESTING flag causes the server to load static data in offline-data/
+# The TESTING_STATE flag causes the server to load static data in offline-data/
+# When writing new code or debugging, it's often useful to set this to TRUE
+# so as not to spend time downloading from Dropbox
 TESTING <- FALSE
-# Check if we're running in a testing or continuous integration environment
-TESTING <- TESTING || isTRUE(getOption("shiny.testmode")) # doesn't work?!?
-TESTING <- TESTING || Sys.getenv("CI") == "true"
 
 # Flooding event length (hours)
 EVENT_LENGTH <- 10
@@ -35,19 +33,11 @@ TEXT_MSG_USERS <- tribble(
     "Julia",   "8644205609",  "Verizon"
 )
 
-# The server normally accesses the SERC Dropbox to download data
-# If we are TESTING, however, skip this and use local test data only
-if(!TESTING) {
-    datadir <- "TEMPEST_PNNL_Data/Current_Data"
-    token <- readRDS("droptoken.rds")
-    cursor <- drop_dir(datadir, cursor = TRUE, dtoken = token)
-}
-last_update <- NA
-
-GRAPH_TIME_WINDOW <- 24   # hours back from present
+GRAPH_TIME_WINDOW <- 24   # hours back from the dashboard datetime
 GRAPH_TIME_INTERVAL <- "15 minutes"  # used by round_date in graphs
-FLAG_TIME_WINDOW <- 1         # hours back from present
+FLAG_TIME_WINDOW <- 1         # hours back from the dashboard datetime
 
+# The 'no data' graph that's shown if no rows are selected, etc.
 NO_DATA_GRAPH <- ggplot() +
     annotate("text", x = 1, y = 1, label = "(No data)", size = 12) +
     theme(axis.title = element_blank(),
