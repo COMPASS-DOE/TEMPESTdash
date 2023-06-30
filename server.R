@@ -5,8 +5,8 @@ source("global.R")
 
 server <- function(input, output, session) {
 
-    dataInvalidate <- reactiveTimer(15 * 60 * 1000)
-    alertInvalidate <- reactiveTimer(60 * 60 * 1000)
+    dataInvalidate  <- reactiveTimer(15 * 60 * 1000) # 15 minutes
+    alertInvalidate <- reactiveTimer(60 * 60 * 1000) # 60 minutes
 
     # ------------------ Check whether testing --------------------------
 
@@ -16,6 +16,7 @@ server <- function(input, output, session) {
     TESTING <<- TESTING || isTRUE(getOption("shiny.testmode"))
     # ...or continuous integration environment
     TESTING <<- TESTING || Sys.getenv("CI") == "true"
+
 
     # ------------------ Read in sensor data -----------------------------
 
@@ -27,6 +28,9 @@ server <- function(input, output, session) {
         cursor <- drop_dir(datadir, cursor = TRUE, dtoken = token)
     }
 
+    # DASHBOARD_DATETIME is the datetime that the dashboard is showing
+    # Normally this is just now (i.e., Sys.time()), but when testing
+    # it will be the latest date of the static testing data
     DASHBOARD_DATETIME <- reactive({
         # Invalidate and re-execute this reactive when timer fires
         dataInvalidate()
@@ -40,6 +44,9 @@ server <- function(input, output, session) {
         }
     })
 
+    # dropbox_data is a list holding all the read-in data along with
+    # several secondary products, e.g. the dashboard badge information
+    # that's computed from the raw data
     dropbox_data <- reactive({
         # Invalidate and re-execute this reactive when timer fires
         dataInvalidate()
@@ -76,6 +83,7 @@ server <- function(input, output, session) {
         c(sapflow_list, teros_list, aquatroll_list, battery_list)
     })
 
+
     # ------------------ Gear and progress circle --------------------------
 
     # gearServer is defined in R/gear_module.R
@@ -97,6 +105,7 @@ server <- function(input, output, session) {
 
         update_progress("circle", circleval)
     })
+
 
     # ------------------ Main dashboard bad sensor tables --------------------
 

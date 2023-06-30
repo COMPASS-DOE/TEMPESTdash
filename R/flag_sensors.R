@@ -1,3 +1,5 @@
+# flag_sensors.R - utility functions
+# BBL June 2023
 
 # These RANGE variables are passed to flag_sensors() by the server, and used
 # to identify sensors out of range

@@ -1,3 +1,4 @@
+# Handle the reading and initial process of Aquatroll data from Dropbox
 
 library(readr)
 library(lubridate)
