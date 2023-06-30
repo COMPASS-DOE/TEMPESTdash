@@ -1,4 +1,4 @@
-# Script to read raw sapflow data and process
+# Handle the reading and initial process of sqpflow data from Dropbox
 
 library(readr)
 library(lubridate)

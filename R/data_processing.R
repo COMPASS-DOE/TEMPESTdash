@@ -1,5 +1,6 @@
 # Data processing
 # Compute badge data, etc. starting from the raw-ish sapflux, TEROS, etc. data
+# BBL June 2023
 
 # Utility function used throughout the code: filter a dataset to a recent
 # window (hours) going from `ddt` (dashboard date time)
@@ -13,6 +14,8 @@ filter_recent_timestamps <- function(x, window, ddt) {
 # All the compute_ functions take the raw data as well as `latest_ts`
 # in case we want to be able to look at past data (although this functionality
 # doesn't exist yet)
+
+# Compute sapflow data products: badge information, table data, bad sensor info
 compute_sapflow <- function(sapflow, ddt) {
 
     sapflow %>%
@@ -50,6 +53,7 @@ compute_sapflow <- function(sapflow, ddt) {
 }
 
 
+# Compute TEROS data products: badge information, table data, bad sensor info
 compute_teros <- function(teros, ddt) {
     # TEROS is awkward, because we only have one badge, but three
     # variables within a single dataset. We compute out-of-limits for each
@@ -89,6 +93,7 @@ compute_teros <- function(teros, ddt) {
 }
 
 
+# Compute Aquatroll data products: badge information, table data, bad sensor info
 compute_aquatroll <- function(aquatroll, ddt) {
     # Aquatroll is similar: one badge, two datasets
     aquatroll$aquatroll_600 %>%
@@ -135,6 +140,7 @@ compute_aquatroll <- function(aquatroll, ddt) {
 }
 
 
+# Compute battery data products: badge information
 compute_battery <- function(battery, ddt) {
 
     battery %>%

@@ -1,3 +1,5 @@
+# Handle the reading and initial process of TEROS data from Dropbox
+
 library(readr)
 library(lubridate)
 library(dplyr)
