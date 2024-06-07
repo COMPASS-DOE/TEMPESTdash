@@ -87,9 +87,9 @@
       "deps": [
         {
           "name": "font-awesome",
-          "version": "6.4.0",
+          "version": "6.4.2",
           "src": {
-            "href": "font-awesome-6.4.0"
+            "href": "font-awesome-6.4.2"
           },
           "meta": null,
           "script": null,
@@ -108,9 +108,9 @@
       "deps": [
         {
           "name": "font-awesome",
-          "version": "6.4.0",
+          "version": "6.4.2",
           "src": {
-            "href": "font-awesome-6.4.0"
+            "href": "font-awesome-6.4.2"
           },
           "meta": null,
           "script": null,
@@ -136,6 +136,18 @@
             {
               "orderable": false,
               "targets": 0
+            },
+            {
+              "name": " ",
+              "targets": 0
+            },
+            {
+              "name": "Tree_Code",
+              "targets": 1
+            },
+            {
+              "name": "Grid_Square",
+              "targets": 2
             }
           ],
           "order": [
@@ -186,9 +198,9 @@
         },
         {
           "name": "dt-core",
-          "version": "1.13.4",
+          "version": "1.13.6",
           "src": {
-            "href": "dt-core-1.13.4"
+            "href": "dt-core-1.13.6"
           },
           "meta": null,
           "script": "js/jquery.dataTables.min.js",
@@ -203,9 +215,9 @@
         },
         {
           "name": "crosstalk",
-          "version": "1.2.0",
+          "version": "1.2.1",
           "src": {
-            "href": "crosstalk-1.2.0"
+            "href": "crosstalk-1.2.1"
           },
           "meta": null,
           "script": "js/crosstalk.min.js",
@@ -221,9 +233,9 @@
       "deps": [
         {
           "name": "font-awesome",
-          "version": "6.4.0",
+          "version": "6.4.2",
           "src": {
-            "href": "font-awesome-6.4.0"
+            "href": "font-awesome-6.4.2"
           },
           "meta": null,
           "script": null,
@@ -12656,9 +12668,9 @@
               0.39287499999999997,
               0.39250000000000002,
               0.39224999999999999,
-              0.38937499999999997,
+              0.38937500000000003,
               0.38687499999999997,
-              0.38737499999999997,
+              0.38737500000000002,
               null,
               0.50524999999999998,
               0.50412500000000005,
@@ -13457,9 +13469,9 @@
         },
         {
           "name": "crosstalk",
-          "version": "1.2.0",
+          "version": "1.2.1",
           "src": {
-            "href": "crosstalk-1.2.0"
+            "href": "crosstalk-1.2.1"
           },
           "meta": null,
           "script": "js/crosstalk.min.js",
@@ -13501,9 +13513,9 @@
       "deps": [
         {
           "name": "font-awesome",
-          "version": "6.4.0",
+          "version": "6.4.2",
           "src": {
-            "href": "font-awesome-6.4.0"
+            "href": "font-awesome-6.4.2"
           },
           "meta": null,
           "script": null,
