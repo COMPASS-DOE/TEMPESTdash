@@ -111,7 +111,8 @@ readr::read_csv("design-doc-copies/inventory copy.csv",
 # Mapping from sapflow to trees
 readr::read_csv("design-doc-copies/sapflow_inventory copy.csv",
                 col_types = "ccdcdddclc") %>%
-    select(Tree_Code, Tag) ->
+    rename(Sapflow_ID = Tree_Code) %>%
+    select(Sapflow_ID, Tag) ->
     sapflow_inv
 
 library(cowplot)
@@ -273,25 +274,25 @@ make_plot_map <- function(STATUS_MAP,
             filter(Plot == plot_name) %>%
             mutate(x = substr(Grid_Square, 1, 1), y = substr(Grid_Square, 2, 2)) ->
             sbs
-        sbs$Tree_Code[sbs$Out_Of_Plot] <- paste(sbs$Tree_Code[sbs$Out_Of_Plot], "\n[OUT]")
+        sbs$Sapflow_ID[sbs$Out_Of_Plot] <- paste(sbs$Sapflow_ID[sbs$Out_Of_Plot], "\n[OUT]")
 
         sapflow_data %>%
-            distinct(Plot, Tree_Code, Grid_Square, Out_Of_Plot) %>%
-            filter(Plot == plot_name, !Tree_Code %in% sbs$Tree_Code) %>%
+            distinct(Plot, Sapflow_ID, Grid_Square, Out_Of_Plot) %>%
+            filter(Plot == plot_name, !Sapflow_ID %in% sbs$Sapflow_ID) %>%
             mutate(x = substr(Grid_Square, 1, 1), y = substr(Grid_Square, 2, 2)) ->
             sdat
-        sdat$Tree_Code[sdat$Out_Of_Plot] <- paste(sdat$Tree_Code[sdat$Out_Of_Plot], "\n[OUT]")
+        sdat$Sapflow_ID[sdat$Out_Of_Plot] <- paste(sdat$Sapflow_ID[sdat$Out_Of_Plot], "\n[OUT]")
 
         p <- p + geom_text(data = sdat,
                            na.rm = TRUE,
                            position = position_jitter(seed = 1234),
-                           aes(label = Tree_Code), color = "green")
+                           aes(label = Sapflow_ID), color = "green")
 
         # We draw bad sensors second, so they're on top of the good sensors
         p <- p + geom_label(data = sbs,
                             na.rm = TRUE,
                             position = position_jitter(seed = 1234),
-                            aes(label = Tree_Code), color = "red", fontface = "bold")
+                            aes(label = Sapflow_ID), color = "red", fontface = "bold")
 
     }
 
@@ -304,14 +305,14 @@ make_plot_map <- function(STATUS_MAP,
             filter(Plot == plot_name) %>%
             filter(Timestamp >= ddt - 1 * 60 * 60) %>%
             # For each sensor, get its last timestamp of data
-            group_by(Tree_Code) %>%
+            group_by(Sapflow_ID) %>%
             filter(Timestamp == max(Timestamp)) %>%
             filter(is.finite(Value)) %>%
-            select(Plot, Tree_Code, Logger, Grid_Square, Value) ->
+            select(Plot, Sapflow_ID, Logger, Grid_Square, Value) ->
             sd_with_data
         sapflow_bad_sensors %>%
             # Bad sensors: isolate to plot and IDs not in our good sensor list
-            filter(Plot == plot_name, !Tree_Code %in% sd_with_data$Tree_Code) %>%
+            filter(Plot == plot_name, !Sapflow_ID %in% sd_with_data$Sapflow_ID) %>%
             bind_rows(sd_with_data) %>%
             mutate(x = substr(Grid_Square, 1, 1), y = substr(Grid_Square, 2, 2)) ->
             sd_all
@@ -319,7 +320,7 @@ make_plot_map <- function(STATUS_MAP,
         # ...and join with tree-code-to-tag mapping, and then to inventory data
         # inv %>%
         #     left_join(sapflow_inv, by = "Tag") %>%
-        #     left_join(sdat, by = "Tree_Code") ->
+        #     left_join(sdat, by = "Sapflow_ID") ->
         #     sdat
         p <- p + ggtitle(paste(plot_name, strftime(ddt, '%F %T', usetz = TRUE)))
         p <- p + geom_point(data = sd_all,
