@@ -24,7 +24,10 @@ process_sapflow <- function(token, datadir) {
         select(Plot, Timestamp, Record, BattV_Avg, Port, Value, Logger, Tree_Code, Grid_Square, Out_Of_Plot, Species, Installation_Date) %>%
         mutate(Deep_Sensor = grepl("D", Tree_Code),
                Grid_Letter = substring(Grid_Square, 1, 1),
-               Grid_Number = substring(Grid_Square, 2, 2)) -> sapflow
+               Grid_Number = substring(Grid_Square, 2, 2)) %>%
+        # TEMPORARY HACK -- JUNE 2024 -- REMOVE OBSOLETE SENSOR CODES
+        filter(!Tree_Code %in% c("SD2", "CD6", "SD9", "CD10")) ->
+        sapflow
 
     nomatch_ports <- anti_join(sf_raw, sf_inventory, by = c("Logger", "Port"))
 
