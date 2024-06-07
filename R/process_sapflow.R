@@ -21,12 +21,13 @@ process_sapflow <- function(token, datadir) {
     sf_raw %>%
         left_join(sf_inventory, by = c("Logger", "Port")) %>%
         filter(!is.na(Tree_Code)) %>% # remove ports that don't have any sensors
-        select(Plot, Timestamp, Record, BattV_Avg, Port, Value, Logger, Tree_Code, Grid_Square, Out_Of_Plot, Species, Installation_Date) %>%
-        mutate(Deep_Sensor = grepl("D", Tree_Code),
+        select(Plot, Timestamp, Record, BattV_Avg, Port, Value, Logger,
+               Sapflow_ID = Tree_Code, Grid_Square, Out_Of_Plot, Species, Installation_Date) %>%
+        mutate(Deep_Sensor = grepl("D", Sapflow_ID),
                Grid_Letter = substring(Grid_Square, 1, 1),
                Grid_Number = substring(Grid_Square, 2, 2)) %>%
         # TEMPORARY HACK -- JUNE 2024 -- REMOVE OBSOLETE SENSOR CODES
-        filter(!Tree_Code %in% c("SD2", "CD6", "SD9", "CD10")) ->
+        filter(!Sapflow_ID %in% c("SD2", "CD6", "SD9", "CD10")) ->
         sapflow
 
     nomatch_ports <- anti_join(sf_raw, sf_inventory, by = c("Logger", "Port"))
@@ -36,5 +37,5 @@ process_sapflow <- function(token, datadir) {
     }
 
     # Cut the memory footprint of the sapflow data by almost half and return
-    select(sapflow, Plot, Timestamp, Value, Tree_Code, Logger, BattV_Avg, Out_Of_Plot, Species, Grid_Square)
+    select(sapflow, Plot, Timestamp, Value, Sapflow_ID, Logger, BattV_Avg, Out_Of_Plot, Species, Grid_Square)
 }

@@ -31,17 +31,17 @@ compute_sapflow <- function(sapflow, ddt) {
                                                  left_limit = SAPFLOW_RANGE[1],
                                                  right_limit = SAPFLOW_RANGE[2])) %>%
         filter(bad_sensor) %>%
-        select(Plot, Tree_Code, Logger, Grid_Square, Out_Of_Plot) %>%
-        distinct(Tree_Code, Logger, .keep_all = TRUE) ->
+        select(Plot, Sapflow_ID, Logger, Grid_Square, Out_Of_Plot) %>%
+        distinct(Sapflow_ID, Logger, .keep_all = TRUE) ->
         sapflow_bad_sensors
 
     sapflow %>%
-        group_by(Tree_Code) %>%
+        group_by(Sapflow_ID) %>%
         slice_tail(n = 10) %>%
         ungroup() %>%
-        select(Timestamp, Plot, Tree_Code, Value, Logger, Grid_Square) %>%
+        select(Timestamp, Plot, Sapflow_ID, Value, Logger, Grid_Square) %>%
         arrange(Timestamp) %>%
-        pivot_wider(id_cols = c("Tree_Code", "Plot", "Grid_Square") ,
+        pivot_wider(id_cols = c("Sapflow_ID", "Plot", "Grid_Square") ,
                     names_from = "Timestamp",
                     values_from = "Value") ->
         sapflow_table_data

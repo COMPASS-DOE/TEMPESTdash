@@ -121,7 +121,7 @@ server <- function(input, output, session) {
             filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
             sapflow
 
-        vals <- bad_sensors(sapflow, sapflow$Value, "Tree_Code", limits = SAPFLOW_RANGE)
+        vals <- bad_sensors(sapflow, sapflow$Value, "Sapflow_ID", limits = SAPFLOW_RANGE)
 
         datatable(vals, options = list(searching = FALSE, pageLength = 5))
     })
@@ -300,12 +300,12 @@ server <- function(input, output, session) {
             ddt <- reactive({ DASHBOARD_DATETIME() })()
             dropbox_data()[["sapflow_table_data"]] %>%
                 slice(input$sapflow_table_rows_selected) %>%
-                pull(Tree_Code) ->
+                pull(Sapflow_ID) ->
                 trees_selected
 
             dropbox_data()[["sapflow"]] %>%
-                filter(Tree_Code %in% trees_selected) %>%
-                ggplot(aes(Timestamp, Value, group = Tree_Code, color = Plot)) +
+                filter(Sapflow_ID %in% trees_selected) %>%
+                ggplot(aes(Timestamp, Value, group = Sapflow_ID, color = Plot)) +
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
