@@ -231,10 +231,7 @@ server <- function(input, output, session) {
 
     output$aquatroll_plot <- renderPlotly({
         # AquaTroll data plot
-        # TODO: this currently just shows temperature; we may want to have multiple
-        # variables, in which case the badge status computation would be like
-        # that of TEROS
-        # This graph is shown when users click the "Battery" tab on the dashboard
+        # This graph is shown when users click the "Aquatroll" tab on the dashboard
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
         bind_rows(dropbox_data()[["aquatroll_200_long"]],
@@ -248,11 +245,17 @@ server <- function(input, output, session) {
                 group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
                 summarise(Well_Name = Well_Name,
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+                left_join(AQUATROLL_RANGE, by = "variable") %>%
+                # Certain versions of plotly seem to have a bug and produce
+                # a tidyr::pivot error when there's a 'variable' column; rename
+                rename(var = variable) %>%
                 ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
-                shaded_flood_rect(ymin = min(AQUATROLL_TEMP_RANGE), ymax = max(AQUATROLL_TEMP_RANGE)) +
+                shaded_flood_rect(ymin = low, ymax = high) +
                 geom_line() +
-                facet_wrap(~variable, scales = "free") +
+                geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
+                geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                facet_wrap(~var, scales = "free", ncol = 2) +
                 xlab("") ->
                 b
 
