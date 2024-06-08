@@ -87,8 +87,20 @@ compute_teros <- function(teros, ddt) {
         distinct(ID, Logger, .keep_all = TRUE) ->
         teros_bad_sensors
 
+    teros_filtered %>%
+        # retain only the 10 most recent observations
+        arrange(Timestamp) %>%
+        group_by(ID, variable) %>%
+        slice_tail(n = 10) %>%
+        ungroup() %>%
+        select(Timestamp, ID, Plot, variable, Grid_Square, Depth, value) %>%
+        pivot_wider(id_cols = c("ID", "Plot", "variable", "Grid_Square", "Depth"),
+                    names_from = "Timestamp", values_from = "value") ->
+        teros_table_data
+
     list(teros = teros,
          teros_bad_sensors = teros_bad_sensors,
+         teros_table_data = teros_table_data,
          teros_bdg = teros_bdg)
 }
 
