@@ -18,6 +18,7 @@ process_sapflow <- function(token, datadir) {
 
     sf_raw <- compasstools::process_sapflow_dir(datadir, tz = "EST",
                                                 token, progress)
+
     sf_raw %>%
         left_join(sf_inventory, by = c("Logger", "Port")) %>%
         filter(!is.na(Tree_Code)) %>% # remove ports that don't have any sensors
