@@ -52,7 +52,7 @@ server <- function(input, output, session) {
         dataInvalidate()
 
         if(TESTING) {
-            sapflow <- readRDS("offline-data/sapflow")
+            sapflow <- readRDS("offline-data/sapflow") %>% rename(Sapflow_ID = Tree_Code)
             teros <- readRDS("offline-data/teros")
             aquatroll <- readRDS("offline-data/aquatroll")
             battery <- readRDS("offline-data/battery")
@@ -152,7 +152,6 @@ server <- function(input, output, session) {
         datatable(vals, options = list(searching = FALSE, pageLength = 5))
     })
 
-
     # ------------------ Main dashboard graphs ---------------------------
 
     # Define a semi-transparent rectangle to indicate flood start/stop
@@ -170,11 +169,11 @@ server <- function(input, output, session) {
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["sapflow"]] %>%
-            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+        dropbox_data()[["sapflow"]] ->
             sapflow
 
         if(nrow(sapflow)) {
+
             sapflow %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
                 group_by(Plot, Logger, Timestamp_rounded) %>%
@@ -189,7 +188,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b)
+        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
+            add_range()
     })
 
     output$teros_plot <- renderPlotly({
@@ -198,8 +198,7 @@ server <- function(input, output, session) {
         # This graph is shown when users click the "TEROS" tab on the dashboard
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["teros"]] %>%
-            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+        dropbox_data()[["teros"]] ->
             teros
 
         if(nrow(teros)) {
@@ -226,7 +225,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b)
+        plotly::ggplotly(b) %>%
+            add_range()
     })
 
     output$aquatroll_plot <- renderPlotly({
@@ -238,8 +238,7 @@ server <- function(input, output, session) {
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
         bind_rows(dropbox_data()[["aquatroll_200_long"]],
-                  dropbox_data()[["aquatroll_600_long"]]) %>%
-            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+                  dropbox_data()[["aquatroll_600_long"]]) ->
             full_trolls_long
 
         if(nrow(full_trolls_long) > 1) {
@@ -255,11 +254,12 @@ server <- function(input, output, session) {
                 facet_wrap(~variable, scales = "free") +
                 xlab("") ->
                 b
-
+browser()
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b)
+        plotly::ggplotly(b) %>%
+            add_range()
     })
 
     output$battery_plot <- renderPlotly({
@@ -282,7 +282,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b)
+        plotly::ggplotly(b) %>%
+            add_range()
     })
 
 
