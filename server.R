@@ -290,7 +290,6 @@ server <- function(input, output, session) {
 
     output$sapflow_table <- DT::renderDataTable(datatable({
         dataInvalidate()
-
         dropbox_data()[["sapflow_table_data"]]
     }))
 
@@ -323,15 +322,7 @@ server <- function(input, output, session) {
 
     output$teros_table <- renderDataTable({
         dataInvalidate()
-
-        dropbox_data()[["teros"]] %>%
-            group_by(ID, variable) %>%
-            slice_tail(n = 10) %>%
-            ungroup() %>%
-            select(Timestamp, ID, Plot, variable, value, Logger, Grid_Square) %>%
-            arrange(Timestamp) %>%
-            pivot_wider(id_cols = c("ID", "Plot", "variable", "Grid_Square"),
-                        names_from = "Timestamp", values_from = "value")
+        dropbox_data()[["teros_table_data"]]
     })
 
     output$teros_detail_graph <- renderPlotly({
@@ -339,25 +330,34 @@ server <- function(input, output, session) {
         if(length(input$teros_table_rows_selected)) {
             ddt <- reactive({ DASHBOARD_DATETIME() })()
 
-            dropbox_data()[["teros"]] %>%
-                group_by(ID, variable) %>%
-                slice_tail(n = 10) %>%
-                ungroup() %>%
-                select(Timestamp, ID, variable, value, Logger, Grid_Square) %>%
-                arrange(Timestamp) %>%
-                pivot_wider(id_cols = c("ID", "variable", "Grid_Square"),
-                            names_from = "Timestamp", values_from = "value") %>%
+            dropbox_data()[["teros_table_data"]] %>%
                 slice(input$teros_table_rows_selected) %>%
                 select(variable, ID) ->
                 tsensor_selected
 
             dropbox_data()[["teros"]] %>%
-                filter(ID %in% tsensor_selected$ID, variable %in% tsensor_selected$variable) %>%
-                ggplot(aes(Timestamp, value, group = interaction(ID, variable), color = ID)) +
-                geom_line() +
+                filter(ID %in% tsensor_selected$ID,
+                       variable %in% tsensor_selected$variable) -> selected_data
+
+            # Try to assign color intelligently. If different plots are selected,
+            # have that be the color; otherwise by depth; otherwise by ID
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- ggplot(selected_data,
+                            aes(Timestamp, value, group = interaction(ID, variable),
+                                color = Plot))
+            } else if(length(unique(selected_data$Depth)) > 1)  {
+                b <- ggplot(selected_data,
+                            aes(Timestamp, value, group = interaction(ID, variable),
+                                color = Depth))
+            } else {
+                b <- ggplot(selected_data,
+                            aes(Timestamp, value, group = interaction(ID, variable),
+                                color = ID))
+            }
+
+            b <- b + geom_line() +
                 xlab("") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
-                b
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
         } else {
             b <- NO_DATA_GRAPH
         }
