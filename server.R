@@ -337,13 +337,27 @@ server <- function(input, output, session) {
 
             dropbox_data()[["teros"]] %>%
                 filter(ID %in% tsensor_selected$ID,
-                       variable %in% tsensor_selected$variable) %>%
-                ggplot(aes(Timestamp, value, group = interaction(ID, variable),
-                           color = Depth)) +
-                geom_line() +
+                       variable %in% tsensor_selected$variable) -> selected_data
+
+            # Try to assign color intelligently. If different plots are selected,
+            # have that be the color; otherwise by depth; otherwise by ID
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- ggplot(selected_data,
+                            aes(Timestamp, value, group = interaction(ID, variable),
+                                color = Plot))
+            } else if(length(unique(selected_data$Depth)) > 1)  {
+                b <- ggplot(selected_data,
+                            aes(Timestamp, value, group = interaction(ID, variable),
+                                color = Depth))
+            } else {
+                b <- ggplot(selected_data,
+                            aes(Timestamp, value, group = interaction(ID, variable),
+                                color = ID))
+            }
+
+            b <- b + geom_line() +
                 xlab("") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
-                b
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
         } else {
             b <- NO_DATA_GRAPH
         }
