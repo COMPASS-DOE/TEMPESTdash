@@ -303,14 +303,25 @@ server <- function(input, output, session) {
                 trees_selected
 
             dropbox_data()[["sapflow"]] %>%
-                filter(Sapflow_ID %in% trees_selected) %>%
-                ggplot(aes(Timestamp, Value, group = Sapflow_ID, color = Plot)) +
-                shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
+                filter(Sapflow_ID %in% trees_selected) ->
+                selected_data
+
+            b <- ggplot(selected_data,
+                        aes(Timestamp, Value, group = Sapflow_ID)) +
+                shaded_flood_rect(ymin = min(SAPFLOW_RANGE),
+                                  ymax = max(SAPFLOW_RANGE)) +
                 geom_line() +
                 xlab("") +
                 xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
-                geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2) ->
-                b
+                geom_hline(yintercept = SAPFLOW_RANGE, color = "grey", linetype = 2)
+            # Try to assign color intelligently. If different plots are selected,
+            # have that be the color; otherwise by ID
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- b + aes(color = Plot)
+            } else {
+                b <- b + aes(color = Sapflow_ID)
+            }
+
         } else {
             b <- NO_DATA_GRAPH
         }
@@ -331,33 +342,28 @@ server <- function(input, output, session) {
             ddt <- reactive({ DASHBOARD_DATETIME() })()
 
             dropbox_data()[["teros_table_data"]] %>%
-                slice(input$teros_table_rows_selected) %>%
-                select(variable, ID) ->
+                slice(input$teros_table_rows_selected) ->
                 tsensor_selected
 
             dropbox_data()[["teros"]] %>%
                 filter(ID %in% tsensor_selected$ID,
                        variable %in% tsensor_selected$variable) -> selected_data
 
+            b <- ggplot(selected_data,
+                        aes(Timestamp, value, group = interaction(ID, variable))) +
+                geom_line() +
+                xlab("") +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
             # Try to assign color intelligently. If different plots are selected,
             # have that be the color; otherwise by depth; otherwise by ID
             if(length(unique(selected_data$Plot)) > 1) {
-                b <- ggplot(selected_data,
-                            aes(Timestamp, value, group = interaction(ID, variable),
-                                color = Plot))
+                b <- b + aes(color = Plot)
             } else if(length(unique(selected_data$Depth)) > 1)  {
-                b <- ggplot(selected_data,
-                            aes(Timestamp, value, group = interaction(ID, variable),
-                                color = Depth))
+                b <- b + aes(color = Depth)
             } else {
-                b <- ggplot(selected_data,
-                            aes(Timestamp, value, group = interaction(ID, variable),
-                                color = ID))
+                b <- b + aes(color = ID)
             }
 
-            b <- b + geom_line() +
-                xlab("") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
         } else {
             b <- NO_DATA_GRAPH
         }
@@ -369,24 +375,7 @@ server <- function(input, output, session) {
 
     output$troll_table <- DT::renderDataTable({
         dataInvalidate()
-
-        dropbox_data()[["aquatroll_200_long"]] %>%
-            group_by(Well_Name, variable) %>%
-            slice_tail(n = 10) %>%
-            ungroup() %>%
-            select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
-            aq200_long
-
-        dropbox_data()[["aquatroll_600_long"]] %>%
-            group_by(Well_Name, variable) %>%
-            slice_tail(n = 10) %>%
-            ungroup() %>%
-            select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) %>%
-            bind_rows(aq200_long) %>%
-            # at this point we have the full trolls dataset in long form
-            arrange(Timestamp) %>%
-            pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"),
-                        names_from = "Timestamp", values_from = "value")
+        dropbox_data()[["aquatroll_table_data"]]
     })
 
     output$troll_detail_graph <- renderPlotly({
@@ -394,23 +383,7 @@ server <- function(input, output, session) {
 
             ddt <- reactive({ DASHBOARD_DATETIME() })()
 
-            dropbox_data()[["aquatroll_200_long"]] %>%
-                group_by(Well_Name, variable) %>%
-                slice_tail(n = 10) %>%
-                ungroup() %>%
-                select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
-                aq200_long
-
-            dropbox_data()[["aquatroll_600_long"]] %>%
-                group_by(Well_Name, variable) %>%
-                slice_tail(n = 10) %>%
-                ungroup() %>%
-                select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) %>%
-                bind_rows(aq200_long) -> trolls
-
-            trolls %>%
-                pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"),
-                            names_from = "Timestamp", values_from = "value") %>%
+            dropbox_data()[["aquatroll_table_data"]] %>%
                 slice(input$troll_table_rows_selected) %>%
                 select(variable, Well_Name) ->
                 aqsensor_selected
@@ -420,13 +393,25 @@ server <- function(input, output, session) {
             dropbox_data()[["aquatroll_200_long"]] %>%
                 bind_rows(dropbox_data()[["aquatroll_600_long"]]) %>%
                 filter(Well_Name %in% aqsensor_selected$Well_Name,
-                       variable %in% aqsensor_selected$variable) %>%
-                ggplot(aes(Timestamp, value, group = interaction(Well_Name, variable), color = Well_Name)) +
+                       variable %in% aqsensor_selected$variable) -> selected_data
+
+            b <- ggplot(selected_data,
+                        aes(Timestamp, value,
+                            group = interaction(Well_Name, variable))) +
                 geom_line() +
                 xlab("") +
                 labs(color = "Well Name") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
-                b
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+            # Try to assign color intelligently. If different plots are selected,
+            # have that be the color; otherwise by variable; otherwise by name
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- b + aes(color = Plot)
+            } else if(length(unique(selected_data$variable)) > 1)  {
+                b <- b + aes(color = variable)
+            } else {
+                b <- b + aes(color = Well_Name)
+            }
+
         } else {
             b <- NO_DATA_GRAPH
         }

@@ -143,10 +143,31 @@ compute_aquatroll <- function(aquatroll, ddt) {
                      names_to = "variable", values_to = "value") ->
         aquatroll_600_long
 
+    aquatroll_200_long %>%
+        arrange(Timestamp) %>%
+        group_by(Well_Name, variable) %>%
+        slice_tail(n = 10) %>%
+        ungroup() %>%
+        select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) ->
+        aq200_long
+
+    aquatroll_600_long %>%
+        arrange(Timestamp) %>%
+        group_by(Well_Name, variable) %>%
+        slice_tail(n = 10) %>%
+        ungroup() %>%
+        select(Timestamp, Well_Name, Instrument, variable, value, Logger_ID, Plot) %>%
+        bind_rows(aq200_long) %>%
+        # at this point we have the full trolls dataset in long form
+        pivot_wider(id_cols = c("Well_Name", "variable", "Plot", "Instrument"),
+                    names_from = "Timestamp", values_from = "value") ->
+        aquatroll_table_data
+
     list(aquatroll_600 = aquatroll$aquatroll_600,
          aquatroll_200 = aquatroll$aquatroll_200,
          aquatroll_600_long = aquatroll_600_long,
          aquatroll_200_long = aquatroll_200_long,
+         aquatroll_table_data = aquatroll_table_data,
          aquatroll_bad_sensors = aquatroll_bad_sensors,
          aquatroll_bdg = aquatroll_bdg)
 }
