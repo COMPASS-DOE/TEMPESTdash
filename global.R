@@ -39,7 +39,7 @@ FLAG_TIME_WINDOW <- 1         # hours back from the dashboard datetime
 
 # The 'no data' graph that's shown if no rows are selected, etc.
 NO_DATA_GRAPH <- ggplot() +
-    annotate("text", x = 1, y = 1, label = "(No data)", size = 12) +
+    annotate("text", x = 1, y = 1, label = "(No selection)", size = 12) +
     theme(axis.title = element_blank(),
           axis.text  = element_blank(),
     )
