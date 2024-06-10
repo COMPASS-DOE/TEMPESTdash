@@ -213,7 +213,9 @@ server <- function(input, output, session) {
                 left_join(TEROS_RANGE, by = c("var" = "variable")) ->
                 tdat
 
-            ggplot(tdat) +
+            tdat %>%
+                filter(var == "EC") %>%
+                ggplot() +
                 shaded_flood_rect(ymin = low, ymax = high) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
@@ -221,12 +223,40 @@ server <- function(input, output, session) {
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) ->
-                b
+                b1
+
+            tdat %>%
+                filter(var == "TSOIL") %>%
+                ggplot() +
+                shaded_flood_rect(ymin = low, ymax = high) +
+                facet_wrap(~var, scales = "free", ncol = 2) +
+                geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
+                xlab("") +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
+                geom_hline(aes(yintercept = high), color = "grey", linetype = 2) ->
+                b2
+
+            tdat %>%
+                filter(var == "VWC") %>%
+                ggplot() +
+                shaded_flood_rect(ymin = low, ymax = high) +
+                facet_wrap(~var, scales = "free", ncol = 2) +
+                geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
+                xlab("") +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
+                geom_hline(aes(yintercept = high), color = "grey", linetype = 2) ->
+                b3
+
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b) %>%
-            add_range()
+
+        subplot(ggplotly(b1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
+                (ggplotly(b2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+                (ggplotly(b3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+                nrows=3, shareX = TRUE, shareY = TRUE)
     })
 
     output$aquatroll_plot <- renderPlotly({
@@ -247,30 +277,68 @@ server <- function(input, output, session) {
                 left_join(AQUATROLL_RANGE, by = "variable") %>%
                 # Certain versions of plotly seem to have a bug and produce
                 # a tidyr::pivot error when there's a 'variable' column; rename
-                rename(var = variable) %>%
-                ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                rename(var = variable) -> t
+
+                t %>%
+                    filter(var == "Pressure_psi") %>%
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 shaded_flood_rect(ymin = low, ymax = high) +
                 geom_line() +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
-                xlab("") ->
-                b
-browser()
+                xlab("") -> t1
+
+                t %>%
+                    filter(var == "Salinity") %>%
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                    shaded_flood_rect(ymin = low, ymax = high) +
+                    geom_line() +
+                    geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
+                    geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                    facet_wrap(~var, scales = "free", ncol = 2) +
+                    xlab("") -> t2
+
+                t %>%
+                    filter(var == "Temp") %>%
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                    shaded_flood_rect(ymin = low, ymax = high) +
+                    geom_line() +
+                    geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
+                    geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                    facet_wrap(~var, scales = "free", ncol = 2) +
+                    xlab("") -> t3
+
+                t %>%
+                    filter(var == "DO_mgl") %>%
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                    shaded_flood_rect(ymin = low, ymax = high) +
+                    geom_line() +
+                    geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
+                    geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                    facet_wrap(~var, scales = "free", ncol = 2) +
+                    xlab("") -> t4
+
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b) %>%
-            add_range()
+
+        subplot(ggplotly(t1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
+                (ggplotly(t2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+                (ggplotly(t3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+                (ggplotly(t4, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+                nrows=4, shareX = TRUE, shareY = TRUE)
     })
 
     output$battery_plot <- renderPlotly({
         # Battery voltages, from the sapflow data
         # This graph is shown when users click the "Battery" tab on the dashboard
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["battery"]] %>%
-            filter_recent_timestamps(GRAPH_TIME_WINDOW, ddt) ->
+        dropbox_data()[["battery"]] ->
             battery
 
         if(nrow(battery)) {
@@ -285,7 +353,7 @@ browser()
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b) %>%
+        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
             add_range()
     })
 

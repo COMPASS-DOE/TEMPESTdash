@@ -15,6 +15,6 @@ add_range <- function(p) {
                             label = "Today",
                             step = "day",
                             stepmode = "todate"),
-                        list(step = "all"))),
+                        list(step = "All"))),
                 rangeslider = list(type = "date")))
 }
