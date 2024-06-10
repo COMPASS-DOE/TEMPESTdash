@@ -12,9 +12,9 @@ add_range <- function(p) {
                     buttons = list(
                         list(
                             count = 1,
-                            label = "Today",
+                            label = "today",
                             step = "day",
                             stepmode = "todate"),
-                        list(step = "All"))),
+                        list(step = "all"))),
                 rangeslider = list(type = "date")))
 }
