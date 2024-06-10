@@ -28,7 +28,7 @@ process_sapflow <- function(token, datadir) {
                Grid_Letter = substring(Grid_Square, 1, 1),
                Grid_Number = substring(Grid_Square, 2, 2)) %>%
         # TEMPORARY HACK -- JUNE 2024 -- REMOVE OBSOLETE SENSOR CODES
-        filter(!Sapflow_ID %in% c("SD2", "CD6", "SD9", "CD10")) ->
+        filter(!Sapflow_ID %in% c("SD2", "CD6", "SD9", "CD10", "CD3", "SD14")) ->
         sapflow
 
     nomatch_ports <- anti_join(sf_raw, sf_inventory, by = c("Logger", "Port"))

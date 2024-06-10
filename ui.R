@@ -22,6 +22,7 @@ ui <- dashboardPage(
             menuItem("Sapflow", tabName = "sapflow", icon = icon("tree")),
             menuItem("TEROS", tabName = "teros", icon = icon("temperature-high")),
             menuItem("AquaTroll", tabName = "troll", icon = icon("water")),
+            menuItem("Redox", tabName = "redox", icon = icon("face-smile")),
             menuItem("Battery", tabName = "battery", icon = icon("car-battery")),
             menuItem("Maps", tabName = "maps", icon = icon("map-location-dot")),
             menuItem("Alerts", tabName = "alerts", icon = icon("comment-dots"))
@@ -91,6 +92,10 @@ ui <- dashboardPage(
                                plotlyOutput("aquatroll_plot", height = "400px")
                            ),
                            tabPanel(
+                               title = "Redox",
+                               plotlyOutput("redox_plot", height = "400px")
+                           ),
+                           tabPanel(
                                title = "Battery",
                                plotlyOutput("battery_plot", height = "400px")
                            )
@@ -112,6 +117,11 @@ ui <- dashboardPage(
                 tabName = "troll",
                 DT::dataTableOutput("troll_table"),
                 plotlyOutput("troll_detail_graph")
+            ),
+            tabItem(
+                tabName = "redox",
+                DT::dataTableOutput("redox_table"),
+                plotlyOutput("redox_detail_graph")
             ),
             tabItem(
                 tabName = "battery",

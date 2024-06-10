@@ -16,5 +16,6 @@ add_range <- function(p) {
                             step = "day",
                             stepmode = "todate"),
                         list(step = "all"))),
-                rangeslider = list(type = "date")))
+                rangeslider = list(type = "date")),
+            yaxis = list(fixedrange = FALSE))
 }

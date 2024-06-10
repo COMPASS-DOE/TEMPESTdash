@@ -69,6 +69,7 @@ server <- function(input, output, session) {
                 group_by(Plot, Logger, Timestamp) %>%
                 summarise(BattV_Avg = mean(BattV_Avg), .groups = "drop") ->
                 battery
+            redox <- withProgress(process_redox(token, datadir), message = "Updating Redox...")
         }
 
         # Do limits testing and compute data needed for badges
@@ -78,9 +79,10 @@ server <- function(input, output, session) {
         teros_list <- compute_teros(teros, ddt)
         aquatroll_list <- compute_aquatroll(aquatroll, ddt)
         battery_list <- compute_battery(battery, ddt)
+        redox_list <- compute_redox(redox, ddt)
 
         # Return data and badge information
-        c(sapflow_list, teros_list, aquatroll_list, battery_list)
+        c(sapflow_list, teros_list, aquatroll_list, battery_list, redox_list)
     })
 
 
@@ -334,6 +336,29 @@ server <- function(input, output, session) {
                 nrows=4, shareX = TRUE, shareY = TRUE)
     })
 
+    output$redox_plot <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        dropbox_data()[["redox"]] ->
+            redox
+
+        if(nrow(redox)) {
+            redox %>%
+                ggplot(aes(Timestamp, Redox, color = Plot, group = interaction(Plot, Ref, Depth_cm), linetype = Ref)) +
+                shaded_flood_rect(ymin = 0, ymax = 1000) +
+                geom_line() +
+                xlab("") +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
+                b
+
+        } else {
+            b <- NO_DATA_GRAPH
+        }
+        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
+            add_range()
+
+    })
+
     output$battery_plot <- renderPlotly({
         # Battery voltages, from the sapflow data
         # This graph is shown when users click the "Battery" tab on the dashboard
@@ -490,6 +515,48 @@ server <- function(input, output, session) {
         plotly::ggplotly(b)
     })
 
+    # ------------------ Redox tab table and graph -----------------------------
+
+    output$redox_table <- DT::renderDataTable({
+        dataInvalidate()
+        dropbox_data()[["redox_table_data"]]
+    })
+
+
+    output$redox_detail_graph <- renderPlotly({
+
+        if(length(input$redox_table_rows_selected)) {
+
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+            dropbox_data()[["redox_table_data"]] %>%
+                slice(input$redox_table_rows_selected) ->
+                redox_selected
+
+            redox_selected_rowid <- paste(redox_selected$Plot, redox_selected$Depth_cm, redox_selected$Ref)
+
+            dropbox_data()[["redox"]] %>%
+                filter(paste(Plot, Depth_cm, Ref) %in% redox_selected_rowid) ->
+                selected_data
+
+            b <- ggplot(selected_data,
+                        aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot))) +
+                geom_line() +
+                xlab("") +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- b + aes(color = Plot)
+            } else if(length(unique(selected_data$Depth_cm)) > 1)  {
+                b <- b + aes(color = as.factor(Depth_cm))
+            } else {
+                b <- b + aes(color = Ref)
+            }
+
+        } else {
+            b <- NO_DATA_GRAPH
+        }
+        plotly::ggplotly(b)
+    })
 
     # ------------------ Battery tab table and graph -----------------------------
 

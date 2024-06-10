@@ -187,3 +187,19 @@ compute_battery <- function(battery, ddt) {
     list(battery = battery,
          battery_bdg = battery_bdg)
 }
+
+compute_redox <- function(redox, ddt) {
+
+    redox %>%
+        # retain only the 10 most recent observations
+        arrange(Timestamp) %>%
+        group_by(Depth_cm, Ref, Plot) %>%
+        slice_tail(n = 10) %>%
+        ungroup() %>%
+        pivot_wider(id_cols = c("Plot", "Depth_cm", "Ref"),
+                    names_from = "Timestamp", values_from = "Redox") ->
+        redox_table_data
+
+    list(redox = redox, redox_table_data = redox_table_data)
+
+}
