@@ -21,7 +21,7 @@ library(compasstools)
 # The TESTING_STATE flag causes the server to load static data in offline-data/
 # When writing new code or debugging, it's often useful to set this to TRUE
 # so as not to spend time downloading from Dropbox
-TESTING <- FALSE
+TESTING <- TRUE
 
 # Flooding event length (hours)
 EVENT_LENGTH <- 10

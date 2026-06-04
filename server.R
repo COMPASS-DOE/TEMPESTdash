@@ -52,9 +52,14 @@ server <- function(input, output, session) {
         dataInvalidate()
 
         if(TESTING) {
-            sapflow <- readRDS("offline-data/sapflow") %>% rename(Sapflow_ID = Tree_Code)
+            sapflow <- readRDS("offline-data/sapflow")# %>% rename(Sapflow_ID = Tree_Code)
             teros <- readRDS("offline-data/teros")
-            aquatroll <- readRDS("offline-data/aquatroll")
+            aquatroll <- list(
+                aquatroll_600 = readRDS("offline-data/aquatroll") %>% filter(Instrument == "TROLL600"),
+                aquatroll_200 = readRDS("offline-data/aquatroll") %>% filter(Instrument == "TROLL200")
+            )
+            do <- readRDS("offline-data/do")
+            redox <- readRDS("offline-data/redox")
             battery <- readRDS("offline-data/battery")
         } else {
             sapflow <- withProgress(process_sapflow(token, datadir), message = "Updating sapflow...")
@@ -70,6 +75,7 @@ server <- function(input, output, session) {
                 summarise(BattV_Avg = mean(BattV_Avg), .groups = "drop") ->
                 battery
             redox <- withProgress(process_redox(token, datadir), message = "Updating Redox...")
+            do <- withProgress(process_redox(token, datadir), message = "Updating soil DO...")
         }
 
         # Do limits testing and compute data needed for badges
@@ -78,11 +84,12 @@ server <- function(input, output, session) {
         sapflow_list <- compute_sapflow(sapflow, ddt)
         teros_list <- compute_teros(teros, ddt)
         aquatroll_list <- compute_aquatroll(aquatroll, ddt)
-        battery_list <- compute_battery(battery, ddt)
         redox_list <- compute_redox(redox, ddt)
+        do_list <- compute_do(do, ddt)
+        battery_list <- compute_battery(battery, ddt)
 
         # Return data and badge information
-        c(sapflow_list, teros_list, aquatroll_list, battery_list, redox_list)
+        c(sapflow_list, teros_list, aquatroll_list, redox_list, do_list, battery_list)
     })
 
 
@@ -135,6 +142,16 @@ server <- function(input, output, session) {
 
     output$troll_bad_sensors <- DT::renderDataTable({
         dropbox_data()[["aquatroll_bad_sensors"]] %>%
+            datatable(options = list(searching = FALSE, pageLength = 5))
+    })
+
+    output$redox_bad_sensors <- DT::renderDataTable({
+        dropbox_data()[["redox_bad_sensors"]] %>%
+            datatable(options = list(searching = FALSE, pageLength = 5))
+    })
+
+    output$do_bad_sensors <- DT::renderDataTable({
+        dropbox_data()[["do_bad_sensors"]] %>%
             datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
@@ -359,6 +376,27 @@ server <- function(input, output, session) {
 
     })
 
+    output$do_plot <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        # dropbox_data()[["do"]] ->
+        #     do
+
+        if(nrow(do)) {
+            do %>%
+                filter(Variable == "PerAirSat") %>%
+                ggplot(aes(Timestamp, Value, group = interaction(Plot, Depth_cm), color = Depth_cm)) +
+                geom_line() +
+                xlab("") +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> d
+        } else {
+            d <- NO_DATA_GRAPH
+        }
+        plotly::ggplotly(d, dynamicTicks = TRUE) %>%
+            add_range()
+
+    })
+
     output$battery_plot <- renderPlotly({
         # Battery voltages, from the sapflow data
         # This graph is shown when users click the "Battery" tab on the dashboard
@@ -558,6 +596,14 @@ server <- function(input, output, session) {
         plotly::ggplotly(b)
     })
 
+    # ------------------ Soil DO tab table and graph -----------------------------
+    output$do_table <- DT::renderDataTable({
+        dataInvalidate()
+        dropbox_data()[["do_table_data"]]
+    })
+
+    # add table graphing
+
     # ------------------ Battery tab table and graph -----------------------------
 
     output$btable <- DT::renderDataTable({
@@ -611,6 +657,20 @@ server <- function(input, output, session) {
                  icon = icon("water")
         )
     })
+    output$redox_bdg <- renderValueBox({
+        valueBox(dropbox_data()[["redox_bdg"]]$percent_in[1],
+                 "Redox",
+                 color = dropbox_data()[["redox_bdg"]]$color[1],
+                 icon = icon("face-smile")
+        )
+    })
+    output$do_bdg <- renderValueBox({
+        valueBox(dropbox_data()[["do_bdg"]]$percent_in[1],
+                 "Soil DO",
+                 color = dropbox_data()[["do_bdg"]]$color[1],
+                 icon = icon("worm")
+       )
+    })
     output$battery_bdg <- renderValueBox({
         valueBox(dropbox_data()[["battery_bdg"]]$percent_in[1],
                  "Battery",
@@ -621,15 +681,15 @@ server <- function(input, output, session) {
 
 
     # ------------------ Text alerts -----------------------------
-
-    observeEvent({
-        # This will calculate values and send out messages to everyone in "new_user" df
-        # could just have people not choose what they want alerts for?
-        #initial_alert()
-        alertInvalidate()
-    }, {
-        # send_alerts is defined in R/alerts_module.R
-        send_alerts(dropbox_data)
-    })
-
-}
+#
+#     observeEvent({
+#         # This will calculate values and send out messages to everyone in "new_user" df
+#         # could just have people not choose what they want alerts for?
+#         #initial_alert()
+#         alertInvalidate()
+#     }, {
+#         # send_alerts is defined in R/alerts_module.R
+#         send_alerts(dropbox_data)
+#     })
+#
+ }

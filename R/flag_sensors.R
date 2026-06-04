@@ -23,6 +23,10 @@ AQUATROLL_TEMP_RANGE <- unlist(
     AQUATROLL_RANGE[AQUATROLL_RANGE$variable=="Temp", c("low", "high")]
     )
 
+DO_RANGE <- c(-5, 120)
+
+REDOX_RANGE <- c(-2500, 2500)
+
 # Badge colors and 'trigger' values
 # Currently green-yellow-red; could have more colors if desired
 BADGE_COLORS <- c("green" = 0.0,    # green starts at 0% fail (this shouldn't change)

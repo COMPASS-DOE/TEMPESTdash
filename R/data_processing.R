@@ -191,6 +191,24 @@ compute_battery <- function(battery, ddt) {
 compute_redox <- function(redox, ddt) {
 
     redox %>%
+        filter(Depth_cm != 0) %>%
+        filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
+        redox_filtered
+
+    redox_filtered %>%
+        summarise(flag_sensors(Redox, limits = REDOX_RANGE)) ->
+        redox_bdg
+
+    redox_filtered %>%
+        mutate(bad_sensor = which_outside_limits(Redox,
+                                                 left_limit = REDOX_RANGE[1],
+                                                 right_limit = REDOX_RANGE[2])) %>%
+        filter(bad_sensor) %>%
+        select(Plot, Ref, Depth_cm) %>%
+        distinct(Plot, Ref, Depth_cm, .keep_all = TRUE) ->
+        redox_bad_sensors
+
+    redox_filtered %>%
         # retain only the 10 most recent observations
         arrange(Timestamp) %>%
         group_by(Depth_cm, Ref, Plot) %>%
@@ -200,6 +218,47 @@ compute_redox <- function(redox, ddt) {
                     names_from = "Timestamp", values_from = "Redox") ->
         redox_table_data
 
-    list(redox = redox, redox_table_data = redox_table_data)
+    list(redox = redox,
+         redox_bdg = redox_bdg,
+         redox_bad_sensors = redox_bad_sensors,
+         redox_table_data = redox_table_data)
+
+}
+
+compute_do <- function(do, ddt) {
+
+    do %>%
+        filter(Variable == "PerAirSat") %>%
+        filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
+        do_filtered
+
+    do_filtered %>%
+        summarise(flag_sensors(Value, limits = DO_RANGE)) ->
+        do_bdg
+
+    do_filtered %>%
+        mutate(bad_sensor = which_outside_limits(Value,
+                                                 left_limit = DO_RANGE[1],
+                                                 right_limit = DO_RANGE[2])) %>%
+        filter(bad_sensor) %>%
+        select(Plot, Logger) %>%
+        distinct(Logger, .keep_all = TRUE) ->
+        do_bad_sensors
+
+    do_filtered %>%
+        # retain only the 10 most recent observations
+        arrange(Timestamp) %>%
+        group_by(Depth_cm, Variable, Plot) %>%
+        slice_tail(n = 10) %>%
+        ungroup() %>%
+        pivot_wider(id_cols = c("Plot", "Depth_cm", "Variable"),
+                    names_from = "Timestamp", values_from = "Value") ->
+        do_table_data
+
+    list(do = do,
+         do_bdg = do_bdg,
+         do_bad_sensors = do_bad_sensors,
+         do_table_data = do_table_data)
+
 
 }

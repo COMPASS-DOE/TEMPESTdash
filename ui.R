@@ -23,9 +23,10 @@ ui <- dashboardPage(
             menuItem("TEROS", tabName = "teros", icon = icon("temperature-high")),
             menuItem("AquaTroll", tabName = "troll", icon = icon("water")),
             menuItem("Redox", tabName = "redox", icon = icon("face-smile")),
+            menuItem("Soil DO", tabName = "do", icon = icon("worm", variant = "light")),
             menuItem("Battery", tabName = "battery", icon = icon("car-battery")),
-            menuItem("Maps", tabName = "maps", icon = icon("map-location-dot")),
-            menuItem("Alerts", tabName = "alerts", icon = icon("comment-dots"))
+            menuItem("Maps", tabName = "maps", icon = icon("map-location-dot"))#,
+            #menuItem("Alerts", tabName = "alerts", icon = icon("comment-dots"))
         )
     ),
     dashboardBody(
@@ -40,10 +41,12 @@ ui <- dashboardPage(
                     textOutput("DDT"),
 
                     # Front page badges; their attributes are computed by the server
-                    valueBoxOutput("sapflow_bdg", width = 3),
-                    valueBoxOutput("teros_bdg", width = 3),
-                    valueBoxOutput("aquatroll_bdg", width = 3),
-                    valueBoxOutput("battery_bdg", width = 3)
+                    valueBoxOutput("sapflow_bdg", width = 2),
+                    valueBoxOutput("teros_bdg", width = 2),
+                    valueBoxOutput("aquatroll_bdg", width = 2),
+                    valueBoxOutput("redox_bdg", width = 2),
+                    valueBoxOutput("do_bdg", width = 2),
+                    valueBoxOutput("battery_bdg", width = 2)
                 ),
                 fluidRow(
                     # Gear UI is defined in R/gear_module.R
@@ -67,7 +70,14 @@ ui <- dashboardPage(
                                   tabPanel(
                                       title = "AquaTroll",
                                       dataTableOutput("troll_bad_sensors")
-
+                                  ),
+                                  tabPanel(
+                                      title = "Redox",
+                                      dataTableOutput("redox_bad_sensors")
+                                  ),
+                                  tabPanel(
+                                      title = "DO",
+                                      dataTableOutput("do_bad_sensors")
                                   ),
                                   tabPanel(
                                       title = "Battery",
@@ -94,6 +104,10 @@ ui <- dashboardPage(
                            tabPanel(
                                title = "Redox",
                                plotlyOutput("redox_plot", height = "400px")
+                           ),
+                           tabPanel(
+                               title = "DO",
+                               plotlyOutput("do_plot", height = "400px")
                            ),
                            tabPanel(
                                title = "Battery",
@@ -124,13 +138,18 @@ ui <- dashboardPage(
                 plotlyOutput("redox_detail_graph")
             ),
             tabItem(
+                tabName = "do",
+                DT::dataTableOutput("do_table"),
+                plotlyOutput("do_detail_graph")
+            ),
+            tabItem(
                 tabName = "battery",
                 dataTableOutput("btable")
             ),
             # Maps tab UI is defined in R/maps_module.R
-            mapsUI("mapsTab"),
+            mapsUI("mapsTab")#,
             # Alerts tab UI is defined in R/alerts_module.R
-            alertsUI("alertsTab")
+            # alertsUI("alertsTab")
         )
     )
 )
