@@ -602,7 +602,38 @@ server <- function(input, output, session) {
         dropbox_data()[["do_table_data"]]
     })
 
-    # add table graphing
+    output$do_detail_graph <- renderPlotly({
+
+        if(length(input$do_table_rows_selected)) {
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+            dropbox_data()[["do_table_data"]] %>%
+                slice(input$do_table_rows_selected) ->
+                dosensor_selected
+
+            dropbox_data()[["do"]] %>%
+                filter(Variable %in% dosensor_selected$Variable,
+                       Depth_cm %in% dosensor_selected$Depth_cm,
+                       Plot %in% dosensor_selected$Plot) -> selected_data
+
+            b <- ggplot(selected_data,
+                        aes(Timestamp, Value, group = interaction(Plot, Depth_cm))) +
+                geom_line() +
+                xlab("") +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+            # Try to assign color intelligently. If different plots are selected,
+            # have that be the color; otherwise by depth
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- b + aes(color = Plot)
+            } else if(length(unique(selected_data$Depth_cm)) > 1)  {
+                b <- b + aes(color = Depth_cm)
+            }
+
+        } else {
+            b <- NO_DATA_GRAPH
+        }
+        plotly::ggplotly(b)
+    })
 
     # ------------------ Battery tab table and graph -----------------------------
 
