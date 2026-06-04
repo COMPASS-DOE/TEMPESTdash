@@ -361,7 +361,7 @@ server <- function(input, output, session) {
 
         if(nrow(redox)) {
             redox %>%
-                ggplot(aes(Timestamp, Redox, color = Plot, group = interaction(Plot, Ref, Depth_cm), linetype = Ref)) +
+                ggplot(aes(Timestamp, Redox, color = Plot, group = interaction(Plot, Depth_cm), linetype = Ref)) +
                 shaded_flood_rect(ymin = 0, ymax = 1000) +
                 geom_line() +
                 xlab("") +
@@ -379,13 +379,14 @@ server <- function(input, output, session) {
     output$do_plot <- renderPlotly({
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        # dropbox_data()[["do"]] ->
-        #     do
+        dropbox_data()[["do"]] ->
+            do
 
         if(nrow(do)) {
             do %>%
                 filter(Variable == "PerAirSat") %>%
                 ggplot(aes(Timestamp, Value, group = interaction(Plot, Depth_cm), color = Depth_cm)) +
+                shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
                 geom_line() +
                 xlab("") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> d
