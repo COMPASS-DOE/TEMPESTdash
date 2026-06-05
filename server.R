@@ -22,10 +22,13 @@ server <- function(input, output, session) {
 
     # The server normally accesses the SERC Dropbox to download data
     # If we are TESTING, however, skip this and use local test data only
-    if(!TESTING) {
+    if(!TESTING & !LOCAL) {
         datadir <- "TEMPEST_PNNL_Data/Current_Data"
         token <- readRDS("droptoken.rds")
         cursor <- rdrop2refreshtoken::drop_dir(datadir, cursor = TRUE, dtoken = token)
+    } else if (!TESTING & LOCAL) {
+        datadir <- "~/Dropbox (Smithsonian)/TEMPEST_PNNL_Data/Current_data/"
+        token <- NULL
     }
 
     # DASHBOARD_DATETIME is the datetime that the dashboard is showing
@@ -75,7 +78,7 @@ server <- function(input, output, session) {
                 summarise(BattV_Avg = mean(BattV_Avg), .groups = "drop") ->
                 battery
             redox <- withProgress(process_redox(token, datadir), message = "Updating Redox...")
-            do <- withProgress(process_redox(token, datadir), message = "Updating soil DO...")
+            do <- withProgress(process_do(token, datadir), message = "Updating soil DO...")
         }
 
         # Do limits testing and compute data needed for badges

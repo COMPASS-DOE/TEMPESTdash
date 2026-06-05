@@ -12,7 +12,8 @@ library(gmailr)
 
 ui <- dashboardPage(
 
-    skin = if_else(TESTING, "red-light", "black-light"),
+    skin = if_else(TESTING, "red-light",
+                   if_else(LOCAL, "purple-light", "black-light")),
     dashboardHeader(
         title = "TEMPEST Dashboard"
     ),
