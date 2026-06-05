@@ -121,23 +121,19 @@ ui <- dashboardPage(
             ),
             tabItem(
                 tabName = "timemachine",
-                sidebarPanel(
+
                     selectInput(inputId = "big_graph",
                                 label = "Select data type to graph:",
-                                choices = c("Aquatroll Pressure", "Aquatroll Salinity"),
+                                choices = c("TEROS Conductivity", "Aquatroll Salinity"),
                                 selected = "Aquatroll Salinity"),
                     checkboxGroupInput(inputId = "toggle",
                                        label = strong("Show past TEMPEST data:"),
                                        choices = c("TEMPEST 1",
                                                    "TEMPEST 2",
                                                    "TEMPEST 3"),
-                                       selected = "TEMPEST 1")
-                ),
-                mainPanel(
+                                       selected = "TEMPEST 1"),
                     plotOutput("time_machine_plot")
 
-
-                )
             ),
             tabItem(
                 tabName = "sapflow",

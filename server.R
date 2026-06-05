@@ -25,7 +25,7 @@ server <- function(input, output, session) {
     if(!TESTING) {
         datadir <- "TEMPEST_PNNL_Data/Current_Data"
         token <- readRDS("droptoken.rds")
-        cursor <- drop_dir(datadir, cursor = TRUE, dtoken = token)
+        cursor <- rdrop2refreshtoken::drop_dir(datadir, cursor = TRUE, dtoken = token)
     }
 
     # DASHBOARD_DATETIME is the datetime that the dashboard is showing
@@ -440,12 +440,27 @@ server <- function(input, output, session) {
                 t %>%
                     filter(variable == "Salinity") %>%
                     ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
-                    coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
-                    shaded_flood_rect(ymin = low, ymax = high) +
+                    shaded_flood_rect(ymin = -Inf, ymax = Inf) +
                     geom_line() +
-                    xlab("")
+                    xlab("") -> p
+
+        } else if(input$big_graph == "TEROS Conductivity") {
+
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+            dropbox_data()[["teros"]] %>%
+                filter(variable == "EC") %>%
+                left_join(TEROS_RANGE, by = "variable") -> t
+
+            t %>%
+                group_by(Timestamp, Plot) %>%
+                summarise(mean_value = mean(value), low = mean(low), high = mean(high)) %>%
+                ggplot(aes(Timestamp, mean_value, color = Plot)) +
+                shaded_flood_rect(ymin = -Inf, ymax = Inf) +
+                geom_line() +
+                xlab("") -> p
 
         }
+
     })
 
     # ------------------ Sapflow tab table and graph -----------------------------
