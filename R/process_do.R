@@ -54,7 +54,8 @@ process_do <- function(token, datadir) {
         pivot_longer(ch1_Status:ch4_PerO2, names_to = c("Channel", "Variable"), names_sep = "_", values_to = "Value") %>%
         separate(Logger, into = c("one", "Logger")) %>%
         mutate(Timestamp = ymd_hms(TIMESTAMP, tz = "EST"),
-               Plot = case_when(Logger == "21" ~ "Freshwater",
+               Plot = case_when(Logger == "13" ~ "Control",
+                                Logger == "21" ~ "Freshwater",
                                 Logger == "33" ~ "Saltwater",
                                 .default = Logger),
                Depth_cm = case_when(Channel == "ch1" ~ "5",
