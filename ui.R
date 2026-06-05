@@ -19,12 +19,14 @@ ui <- dashboardPage(
     dashboardSidebar(
         sidebarMenu(
             menuItem("Dashboard", tabName = "dashboard", icon = icon("compass")),
+            menuItem("Time Machine", tabName = "timemachine", icon = icon("backward")),
             menuItem("Sapflow", tabName = "sapflow", icon = icon("tree")),
             menuItem("TEROS", tabName = "teros", icon = icon("temperature-high")),
             menuItem("AquaTroll", tabName = "troll", icon = icon("water")),
             menuItem("Redox", tabName = "redox", icon = icon("face-smile")),
             menuItem("Soil DO", tabName = "do", icon = icon("worm", variant = "light")),
             menuItem("Battery", tabName = "battery", icon = icon("car-battery")),
+            menuItem("ERT", tabName = "ert", icon = icon("bolt")),
             menuItem("Maps", tabName = "maps", icon = icon("map-location-dot"))#,
             #menuItem("Alerts", tabName = "alerts", icon = icon("comment-dots"))
         )
@@ -116,6 +118,26 @@ ui <- dashboardPage(
                     )
                 )
 
+            ),
+            tabItem(
+                tabName = "timemachine",
+                sidebarPanel(
+                    selectInput(inputId = "big_graph",
+                                label = "Select data type to graph:",
+                                choices = c("Aquatroll Pressure", "Aquatroll Salinity"),
+                                selected = "Aquatroll Salinity"),
+                    checkboxGroupInput(inputId = "toggle",
+                                       label = strong("Show past TEMPEST data:"),
+                                       choices = c("TEMPEST 1",
+                                                   "TEMPEST 2",
+                                                   "TEMPEST 3"),
+                                       selected = "TEMPEST 1")
+                ),
+                mainPanel(
+                    plotOutput("time_machine_plot")
+
+
+                )
             ),
             tabItem(
                 tabName = "sapflow",

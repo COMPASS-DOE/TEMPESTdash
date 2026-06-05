@@ -422,6 +422,32 @@ server <- function(input, output, session) {
     })
 
 
+    output$time_machine_plot <- renderPlot({
+        if(input$big_graph == "Aquatroll Salinity") {
+
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+            bind_rows(dropbox_data()[["aquatroll_200_long"]],
+                      dropbox_data()[["aquatroll_600_long"]]) ->
+                full_trolls_long
+
+                full_trolls_long %>%
+                    mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
+                    group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
+                    summarise(Well_Name = Well_Name,
+                              value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+                    left_join(AQUATROLL_RANGE, by = "variable") -> t
+
+                t %>%
+                    filter(variable == "Salinity") %>%
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
+                    shaded_flood_rect(ymin = low, ymax = high) +
+                    geom_line() +
+                    xlab("")
+
+        }
+    })
+
     # ------------------ Sapflow tab table and graph -----------------------------
 
     output$sapflow_table <- DT::renderDataTable(datatable({
