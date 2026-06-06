@@ -31,8 +31,8 @@ compute_sapflow <- function(sapflow, ddt) {
                                                  left_limit = SAPFLOW_RANGE[1],
                                                  right_limit = SAPFLOW_RANGE[2])) %>%
         filter(bad_sensor) %>%
-        select(Plot, Sapflow_ID, Logger, Grid_Square, Out_Of_Plot) %>%
-        distinct(Sapflow_ID, Logger, .keep_all = TRUE) ->
+        select(Plot, Sapflow_ID, Logger, Port, Grid_Square, Out_Of_Plot) %>%
+        distinct(Sapflow_ID, Logger, Port, .keep_all = TRUE) ->
         sapflow_bad_sensors
 
     sapflow %>%

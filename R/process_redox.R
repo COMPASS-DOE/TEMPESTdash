@@ -56,9 +56,16 @@ process_redox <- function(token, datadir) {
     pattern <- "Redox15\\.dat$"
 
     process_dir(datadir, pattern, read_datalogger_file, dropbox_token = token) %>%
-        clean_names() %>%
+        clean_names() -> redox_raw
+
+    redox_raw %>%
+        split(grepl("ERT-84", redox_raw$logger)) -> redox_split
+
+    redox_split$`FALSE` %>%
         separate(logger, into = c("one", "two", "plot"), sep = "_") %>%
         select(-one, -two) -> df
+
+    redox_split$`TRUE` -> df_ert
 
     # 3. Format data ---------------------------------------------------------------
 

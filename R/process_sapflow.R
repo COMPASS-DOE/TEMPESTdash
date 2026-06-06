@@ -38,5 +38,5 @@ process_sapflow <- function(token, datadir) {
     }
 
     # Cut the memory footprint of the sapflow data by almost half and return
-    select(sapflow, Plot, Timestamp, Value, Sapflow_ID, Logger, Species_code, Out_Of_Plot, BattV_Avg, Grid_Square)
+    select(sapflow, Plot, Timestamp, Value, Sapflow_ID, Logger, Port, Species_code, Out_Of_Plot, BattV_Avg, Grid_Square)
 }

@@ -127,15 +127,8 @@ server <- function(input, output, session) {
     })
 
     output$sapflow_bad_sensors <- DT::renderDataTable({
-        ddt <- reactive({ DASHBOARD_DATETIME() })()
-
-        dropbox_data()[["sapflow"]] %>%
-            filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
-            sapflow
-
-        vals <- bad_sensors(sapflow, sapflow$Value, "Sapflow_ID", limits = SAPFLOW_RANGE)
-
-        datatable(vals, options = list(searching = FALSE, pageLength = 5))
+        dropbox_data()[["sapflow_bad_sensors"]] %>%
+            datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
     output$teros_bad_sensors <- DT::renderDataTable({
@@ -424,6 +417,8 @@ server <- function(input, output, session) {
             add_range()
     })
 
+    # ------------------ Time Machine tab -----------------------------
+
 
     output$time_machine_plot <- renderPlot({
         if(input$big_graph == "Aquatroll Salinity") {
@@ -464,6 +459,7 @@ server <- function(input, output, session) {
 
         }
 
+        print(p)
     })
 
     # ------------------ Sapflow tab table and graph -----------------------------
@@ -604,7 +600,6 @@ server <- function(input, output, session) {
         dataInvalidate()
         dropbox_data()[["redox_table_data"]]
     })
-
 
     output$redox_detail_graph <- renderPlotly({
 
