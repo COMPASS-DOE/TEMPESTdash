@@ -191,7 +191,6 @@ compute_battery <- function(battery, ddt) {
 compute_redox <- function(redox, ddt) {
 
     redox %>%
-        filter(Depth_cm != 0) %>%
         filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
         redox_filtered
 

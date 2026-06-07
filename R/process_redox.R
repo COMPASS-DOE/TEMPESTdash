@@ -69,28 +69,41 @@ process_redox <- function(token, datadir) {
 
     # 3. Format data ---------------------------------------------------------------
 
-    set_depths <- function(data){
-        data %>%
-            pivot_longer(cols = contains("redox_"), names_to = "sensor", values_to = "redox_mv") %>%
-            separate(sensor, into = c("scrap", "ref", "sensor"), sep = "_") %>%
-            mutate(depth_cm = case_when(sensor == "1" | sensor == "5" | sensor == "9" | sensor == "13" | sensor == "17" ~ 5,
-                                        sensor == "2" | sensor == "6" | sensor == "10" | sensor == "14" | sensor == "18" ~ 15,
-                                        sensor == "3" | sensor == "7" | sensor == "11" | sensor == "15" | sensor == "19" ~ 30,
-                                        sensor == "4" | sensor == "8" | sensor == "12" | sensor == "16" | sensor == "20" ~ 50,
-                                        TRUE ~ 0)) %>%
-            select(-c(statname, scrap))
-    }
-
-    df_raw <- set_depths(df)
-
-    df_raw %>%
+    df %>%
+        pivot_longer(cols = contains("redox_"), names_to = "sensor", values_to = "redox_mv") %>%
+        separate(sensor, into = c("scrap", "ref", "sensor"), sep = "_") %>%
+        mutate(sensor = as.numeric(sensor),
+            depth_cm = case_when(sensor == "1" | sensor == "5" | sensor == "9" | sensor == "13" | sensor == "17" ~ 5,
+                                    sensor == "2" | sensor == "6" | sensor == "10" | sensor == "14" | sensor == "18" ~ 15,
+                                    sensor == "3" | sensor == "7" | sensor == "11" | sensor == "15" | sensor == "19" ~ 30,
+                                    sensor == "4" | sensor == "8" | sensor == "12" | sensor == "16" | sensor == "20" ~ 50,
+                                    .default = 0)) %>%
+        select(-c(statname, scrap)) %>%
         ungroup() %>%
         mutate(Timestamp = lubridate::as_datetime(timestamp, tz = "EST"),
                plot = case_match(plot, "control" ~ "Control",
-                                "fresh" ~ "Freshwater",
-                                "salt" ~ "Saltwater")) %>%
+                                 "fresh" ~ "Freshwater",
+                                 "salt" ~ "Saltwater")) %>%
         group_by(Timestamp, plot, depth_cm, ref) %>%
         summarize(mean_redox = mean(redox_mv, na.rm = T)) %>%
-        rename(Plot = plot, Depth_cm = depth_cm, Redox = mean_redox, Ref = ref)
+        rename(Plot = plot, Depth_cm = depth_cm, Redox = mean_redox, Ref = ref) %>%
+        #drop empty sensors
+        filter(Depth_cm != 0) -> df1
 
+    df_ert %>%
+        pivot_longer(cols = contains("redox_"), names_to = "sensor", values_to = "redox_mv") %>%
+        separate(sensor, into = c("scrap", "ref", "sensor"), sep = "_") %>%
+        mutate(Plot = "ERT",
+               sensor = as.numeric(sensor),
+               Depth_cm = case_when(sensor <= 16 ~ 35,
+                                    sensor >= 17 & sensor <= 32 ~ 25,
+                                    sensor >= 33 & sensor <= 48 ~ 15,
+                                    sensor >= 49 ~ 5,
+                                    .default = NA)) %>%
+        select(-c(statname, scrap)) %>%
+        ungroup() %>%
+        mutate(Timestamp = lubridate::as_datetime(timestamp, tz = "EST")) %>%
+        rename(Redox = redox_mv, Ref = ref) %>%
+        select(Timestamp, Plot, Depth_cm, Ref, Redox) %>%
+        bind_rows(df1)
 }
