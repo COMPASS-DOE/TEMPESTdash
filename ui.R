@@ -125,14 +125,14 @@ ui <- dashboardPage(
 
                     selectInput(inputId = "big_graph",
                                 label = "Select data type to graph:",
-                                choices = c("TEROS Conductivity", "Aquatroll Salinity"),
-                                selected = "Aquatroll Salinity"),
-                    checkboxGroupInput(inputId = "toggle",
+                                choices = c("TEROS Conductivity"),
+                                selected = "TEROS Conductivity"),
+                    radioButtons(inputId = "toggle",
                                        label = strong("Show past TEMPEST data:"),
-                                       choices = c("TEMPEST 1",
-                                                   "TEMPEST 2",
-                                                   "TEMPEST 3"),
-                                       selected = "TEMPEST 1"),
+                                       choices = c("TEMPEST 1" = "TEMPEST1",
+                                                   "TEMPEST 2" = "TEMPEST2",
+                                                   "TEMPEST 3" = "TEMPEST3"),
+                                       selected = "TEMPEST1"),
                     plotOutput("time_machine_plot")
 
             ),

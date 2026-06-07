@@ -419,6 +419,13 @@ server <- function(input, output, session) {
 
     # ------------------ Time Machine tab -----------------------------
 
+    read_csv("past_flood_ranges_teros-ec-15.csv") %>%
+        mutate(Plot = case_when(Plot == "C" ~ "Control",
+                                Plot == "F" ~ "Freshwater",
+                                Plot == "S" ~ "Saltwater",
+                                .default = Plot)) %>%
+        group_by(Site, Plot, Event) %>%
+        summarise(across(c(mean_value, min_value, max_value), mean, na.rm = TRUE)) -> past_floods_teros
 
     output$time_machine_plot <- renderPlot({
         if(input$big_graph == "Aquatroll Salinity") {
@@ -444,22 +451,28 @@ server <- function(input, output, session) {
 
         } else if(input$big_graph == "TEROS Conductivity") {
 
+            past_floods_teros %>%
+                filter(Event == input$toggle) -> past_filtered
+
             ddt <- reactive({ DASHBOARD_DATETIME() })()
+
             dropbox_data()[["teros"]] %>%
                 filter(variable == "EC") %>%
-                left_join(TEROS_RANGE, by = "variable") -> t
+                left_join(past_filtered, by = "Plot") -> t
 
             t %>%
-                group_by(Timestamp, Plot) %>%
-                summarise(mean_value = mean(value), low = mean(low), high = mean(high)) %>%
                 ggplot(aes(Timestamp, mean_value, color = Plot)) +
                 shaded_flood_rect(ymin = -Inf, ymax = Inf) +
+                geom_hline(aes(yintercept = min_value, linetype = "dotdash")) +
+                geom_hline(aes(yintercept = max_value, linetype = "dotdash")) +
                 geom_line() +
-                xlab("") -> p
+                xlab("") +
+                facet_wrap(~Plot, ncol = 1, scales = "free_y") -> p
 
         }
 
         print(p)
+
     })
 
     # ------------------ Sapflow tab table and graph -----------------------------

@@ -23,7 +23,7 @@ library(compasstools)
 # so as not to spend time downloading from Dropbox
 TESTING <- FALSE
 
-LOCAL <- TRUE
+LOCAL <- FALSE
 
 # Flooding event length (hours)
 EVENT_LENGTH <- 10
