@@ -93,9 +93,9 @@ process_redox <- function(token, datadir) {
     df_ert %>%
         pivot_longer(cols = contains("redox_"), names_to = "sensor", values_to = "redox_mv") %>%
         separate(sensor, into = c("scrap", "ref", "sensor"), sep = "_") %>%
-        mutate(Plot = "ERT",
+        mutate(plot = "ERT",
                sensor = as.numeric(sensor),
-               Depth_cm = case_when(sensor <= 16 ~ 35,
+               depth_cm = case_when(sensor <= 16 ~ 35,
                                     sensor >= 17 & sensor <= 32 ~ 25,
                                     sensor >= 33 & sensor <= 48 ~ 15,
                                     sensor >= 49 ~ 5,
@@ -103,7 +103,9 @@ process_redox <- function(token, datadir) {
         select(-c(statname, scrap)) %>%
         ungroup() %>%
         mutate(Timestamp = lubridate::as_datetime(timestamp, tz = "EST")) %>%
-        rename(Redox = redox_mv, Ref = ref) %>%
+        group_by(Timestamp, plot, depth_cm, ref) %>%
+        summarize(mean_redox = mean(redox_mv, na.rm = T)) %>%
+        rename(Plot = plot, Depth_cm = depth_cm, Redox = mean_redox, Ref = ref) %>%
         select(Timestamp, Plot, Depth_cm, Ref, Redox) %>%
         bind_rows(df1)
 }

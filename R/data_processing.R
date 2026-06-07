@@ -208,6 +208,7 @@ compute_redox <- function(redox, ddt) {
         redox_bad_sensors
 
     redox_filtered %>%
+        filter(Plot != "ERT") %>%
         # retain only the 10 most recent observations
         arrange(Timestamp) %>%
         group_by(Depth_cm, Ref, Plot) %>%
@@ -217,10 +218,22 @@ compute_redox <- function(redox, ddt) {
                     names_from = "Timestamp", values_from = "Redox") ->
         redox_table_data
 
+    redox_filtered %>%
+        filter(Plot == "ERT") %>%
+        # retain only the 10 most recent observations
+        arrange(Timestamp) %>%
+        group_by(Depth_cm, Ref, Plot) %>%
+        slice_tail(n = 10) %>%
+        ungroup() %>%
+        pivot_wider(id_cols = c("Plot", "Depth_cm", "Ref"),
+                    names_from = "Timestamp", values_from = "Redox") ->
+        redox_ert_table_data
+
     list(redox = redox,
          redox_bdg = redox_bdg,
          redox_bad_sensors = redox_bad_sensors,
-         redox_table_data = redox_table_data)
+         redox_table_data = redox_table_data,
+         redox_ert_table_data = redox_ert_table_data)
 
 }
 

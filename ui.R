@@ -162,6 +162,12 @@ ui <- dashboardPage(
                 plotlyOutput("do_detail_graph")
             ),
             tabItem(
+                tabName = "ert",
+                DT::dataTableOutput("redox_ert_table"),
+                plotlyOutput("redox_ert_detail_graph")
+
+            ),
+            tabItem(
                 tabName = "battery",
                 dataTableOutput("btable")
             ),

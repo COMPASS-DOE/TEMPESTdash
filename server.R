@@ -203,8 +203,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+#            add_range()
     })
 
     output$teros_plot <- renderPlotly({
@@ -268,9 +268,9 @@ server <- function(input, output, session) {
             b <- NO_DATA_GRAPH
         }
 
-        subplot(ggplotly(b1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
-                (ggplotly(b2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(b3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+        subplot(ggplotly(b1, tooltip="text", dynamicTicks = TRUE), #%>% add_range(),
+                (ggplotly(b2, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(b3, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
                 nrows=3, shareX = TRUE, shareY = TRUE)
     })
 
@@ -342,10 +342,10 @@ server <- function(input, output, session) {
             b <- NO_DATA_GRAPH
         }
 
-        subplot(ggplotly(t1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
-                (ggplotly(t2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(t3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(t4, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+        subplot(ggplotly(t1, tooltip="text", dynamicTicks = TRUE), #%>% add_range(),
+                (ggplotly(t2, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(t3, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(t4, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
                 nrows=4, shareX = TRUE, shareY = TRUE)
     })
 
@@ -367,8 +367,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+#            add_range()
 
     })
 
@@ -389,8 +389,8 @@ server <- function(input, output, session) {
         } else {
             d <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(d, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(d, dynamicTicks = TRUE) #%>%
+       #     add_range()
 
     })
 
@@ -413,8 +413,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+ #           add_range()
     })
 
     # ------------------ Time Machine tab -----------------------------
@@ -691,6 +691,52 @@ server <- function(input, output, session) {
                         names_from = "Timestamp", values_from = "BattV_Avg") %>%
             datatable()
     })
+
+    # ------------------ ERT tab table and graph -----------------------------
+
+    output$redox_ert_table <- DT::renderDataTable({
+        dataInvalidate()
+        dropbox_data()[["redox_ert_table_data"]]
+    })
+
+    output$redox_ert_detail_graph <- renderPlotly({
+        dataInvalidate()
+
+        if(length(input$redox_ert_table_rows_selected)) {
+
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+            dropbox_data()[["redox_ert_table_data"]] %>%
+                slice(input$redox_ert_table_rows_selected) ->
+                redox_selected
+
+            redox_selected_rowid <- paste(redox_selected$Plot, redox_selected$Depth_cm, redox_selected$Ref)
+
+            dropbox_data()[["redox"]] %>%
+                filter(paste(Plot, Depth_cm, Ref) %in% redox_selected_rowid) ->
+                selected_data
+
+            b <- ggplot(selected_data,
+                        aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot))) +
+                geom_line() +
+                xlab("") +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- b + aes(color = Plot)
+            } else if(length(unique(selected_data$Depth_cm)) > 1)  {
+                b <- b + aes(color = as.factor(Depth_cm))
+            } else {
+                b <- b + aes(color = Ref)
+            }
+
+        } else {
+            b <- NO_DATA_GRAPH
+        }
+
+        plotly::ggplotly(b)
+    })
+
+
 
     # ------------------ Maps tab -----------------------------
 
