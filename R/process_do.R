@@ -17,9 +17,9 @@ process_dir <- function(datadir, pattern, read_function,
     } else {
         # We don't want users to need rdrop2 to use this package (i.e. we don't
         # want to put it in DESCRIPTION's Imports:), so check for availability
-        if(requireNamespace("rdrop2", quietly = TRUE)) {
+        if(requireNamespace("rdrop2refreshtoken", quietly = TRUE)) {
             # Generate list of 'current' (based on token) files
-            s_dir <- rdrop2::drop_dir(datadir, dtoken = dropbox_token)
+            s_dir <- rdrop2refreshtoken::drop_dir(datadir, dtoken = dropbox_token)
             s_files <- grep(s_dir$path_display, pattern = pattern, value = TRUE)
         } else {
             stop("rdrop2 package is not available")
@@ -54,7 +54,8 @@ process_do <- function(token, datadir) {
         pivot_longer(ch1_Status:ch4_PerO2, names_to = c("Channel", "Variable"), names_sep = "_", values_to = "Value") %>%
         separate(Logger, into = c("one", "Logger")) %>%
         mutate(Timestamp = ymd_hms(TIMESTAMP, tz = "EST"),
-               Plot = case_when(Logger == "21" ~ "Freshwater",
+               Plot = case_when(Logger == "13" ~ "Control",
+                                Logger == "21" ~ "Freshwater",
                                 Logger == "33" ~ "Saltwater",
                                 .default = Logger),
                Depth_cm = case_when(Channel == "ch1" ~ "5",

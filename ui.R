@@ -12,19 +12,22 @@ library(gmailr)
 
 ui <- dashboardPage(
 
-    skin = if_else(TESTING, "red-light", "black-light"),
+    skin = if_else(TESTING, "red-light",
+                   if_else(LOCAL, "purple-light", "black-light")),
     dashboardHeader(
         title = "TEMPEST Dashboard"
     ),
     dashboardSidebar(
         sidebarMenu(
             menuItem("Dashboard", tabName = "dashboard", icon = icon("compass")),
+            menuItem("Time Machine", tabName = "timemachine", icon = icon("backward")),
             menuItem("Sapflow", tabName = "sapflow", icon = icon("tree")),
             menuItem("TEROS", tabName = "teros", icon = icon("temperature-high")),
             menuItem("AquaTroll", tabName = "troll", icon = icon("water")),
             menuItem("Redox", tabName = "redox", icon = icon("face-smile")),
             menuItem("Soil DO", tabName = "do", icon = icon("worm", variant = "light")),
             menuItem("Battery", tabName = "battery", icon = icon("car-battery")),
+            menuItem("ERT", tabName = "ert", icon = icon("bolt")),
             menuItem("Maps", tabName = "maps", icon = icon("map-location-dot"))#,
             #menuItem("Alerts", tabName = "alerts", icon = icon("comment-dots"))
         )
@@ -118,6 +121,22 @@ ui <- dashboardPage(
 
             ),
             tabItem(
+                tabName = "timemachine",
+
+                    selectInput(inputId = "big_graph",
+                                label = "Select data type to graph:",
+                                choices = c("TEROS Conductivity", "Aquatroll Salinity"),
+                                selected = "Aquatroll Salinity"),
+                    checkboxGroupInput(inputId = "toggle",
+                                       label = strong("Show past TEMPEST data:"),
+                                       choices = c("TEMPEST 1",
+                                                   "TEMPEST 2",
+                                                   "TEMPEST 3"),
+                                       selected = "TEMPEST 1"),
+                    plotOutput("time_machine_plot")
+
+            ),
+            tabItem(
                 tabName = "sapflow",
                 DT::dataTableOutput("sapflow_table"),
                 plotlyOutput("sapflow_detail_graph")
@@ -141,6 +160,12 @@ ui <- dashboardPage(
                 tabName = "do",
                 DT::dataTableOutput("do_table"),
                 plotlyOutput("do_detail_graph")
+            ),
+            tabItem(
+                tabName = "ert",
+                DT::dataTableOutput("redox_ert_table"),
+                plotlyOutput("redox_ert_detail_graph")
+
             ),
             tabItem(
                 tabName = "battery",

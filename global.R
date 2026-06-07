@@ -8,20 +8,22 @@ library(shiny)
 library(DT)
 library(readr)
 library(lubridate)
-library(rdrop2)
+library(rdrop2refreshtoken)
 library(shinybusy)
 library(plotly)
 library(janitor)
 
 if(!require("compasstools")) {
-    stop("Need to remotes::install_github('COMPASS-DOE/compasstools')")
+    stop("Need to devtools::install_github('COMPASS-DOE/compasstools@bypass-dropdir')")
 }
 library(compasstools)
 
 # The TESTING_STATE flag causes the server to load static data in offline-data/
 # When writing new code or debugging, it's often useful to set this to TRUE
 # so as not to spend time downloading from Dropbox
-TESTING <- TRUE
+TESTING <- FALSE
+
+LOCAL <- TRUE
 
 # Flooding event length (hours)
 EVENT_LENGTH <- 10

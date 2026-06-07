@@ -31,8 +31,8 @@ compute_sapflow <- function(sapflow, ddt) {
                                                  left_limit = SAPFLOW_RANGE[1],
                                                  right_limit = SAPFLOW_RANGE[2])) %>%
         filter(bad_sensor) %>%
-        select(Plot, Sapflow_ID, Logger, Grid_Square, Out_Of_Plot) %>%
-        distinct(Sapflow_ID, Logger, .keep_all = TRUE) ->
+        select(Plot, Sapflow_ID, Logger, Port, Grid_Square, Out_Of_Plot) %>%
+        distinct(Sapflow_ID, Logger, Port, .keep_all = TRUE) ->
         sapflow_bad_sensors
 
     sapflow %>%
@@ -191,7 +191,6 @@ compute_battery <- function(battery, ddt) {
 compute_redox <- function(redox, ddt) {
 
     redox %>%
-        filter(Depth_cm != 0) %>%
         filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
         redox_filtered
 
@@ -209,6 +208,7 @@ compute_redox <- function(redox, ddt) {
         redox_bad_sensors
 
     redox_filtered %>%
+        filter(Plot != "ERT") %>%
         # retain only the 10 most recent observations
         arrange(Timestamp) %>%
         group_by(Depth_cm, Ref, Plot) %>%
@@ -218,10 +218,22 @@ compute_redox <- function(redox, ddt) {
                     names_from = "Timestamp", values_from = "Redox") ->
         redox_table_data
 
+    redox_filtered %>%
+        filter(Plot == "ERT") %>%
+        # retain only the 10 most recent observations
+        arrange(Timestamp) %>%
+        group_by(Depth_cm, Ref, Plot) %>%
+        slice_tail(n = 10) %>%
+        ungroup() %>%
+        pivot_wider(id_cols = c("Plot", "Depth_cm", "Ref"),
+                    names_from = "Timestamp", values_from = "Redox") ->
+        redox_ert_table_data
+
     list(redox = redox,
          redox_bdg = redox_bdg,
          redox_bad_sensors = redox_bad_sensors,
-         redox_table_data = redox_table_data)
+         redox_table_data = redox_table_data,
+         redox_ert_table_data = redox_ert_table_data)
 
 }
 

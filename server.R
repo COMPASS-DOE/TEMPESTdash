@@ -22,10 +22,13 @@ server <- function(input, output, session) {
 
     # The server normally accesses the SERC Dropbox to download data
     # If we are TESTING, however, skip this and use local test data only
-    if(!TESTING) {
+    if(!TESTING & !LOCAL) {
         datadir <- "TEMPEST_PNNL_Data/Current_Data"
         token <- readRDS("droptoken.rds")
-        cursor <- drop_dir(datadir, cursor = TRUE, dtoken = token)
+        cursor <- rdrop2refreshtoken::drop_dir(datadir, cursor = TRUE, dtoken = token)
+    } else if (!TESTING & LOCAL) {
+        datadir <- "~/Dropbox (Smithsonian)/TEMPEST_PNNL_Data/Current_data/"
+        token <- NULL
     }
 
     # DASHBOARD_DATETIME is the datetime that the dashboard is showing
@@ -75,7 +78,7 @@ server <- function(input, output, session) {
                 summarise(BattV_Avg = mean(BattV_Avg), .groups = "drop") ->
                 battery
             redox <- withProgress(process_redox(token, datadir), message = "Updating Redox...")
-            do <- withProgress(process_redox(token, datadir), message = "Updating soil DO...")
+            do <- withProgress(process_do(token, datadir), message = "Updating soil DO...")
         }
 
         # Do limits testing and compute data needed for badges
@@ -124,15 +127,8 @@ server <- function(input, output, session) {
     })
 
     output$sapflow_bad_sensors <- DT::renderDataTable({
-        ddt <- reactive({ DASHBOARD_DATETIME() })()
-
-        dropbox_data()[["sapflow"]] %>%
-            filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
-            sapflow
-
-        vals <- bad_sensors(sapflow, sapflow$Value, "Sapflow_ID", limits = SAPFLOW_RANGE)
-
-        datatable(vals, options = list(searching = FALSE, pageLength = 5))
+        dropbox_data()[["sapflow_bad_sensors"]] %>%
+            datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
     output$teros_bad_sensors <- DT::renderDataTable({
@@ -207,8 +203,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+#            add_range()
     })
 
     output$teros_plot <- renderPlotly({
@@ -272,9 +268,9 @@ server <- function(input, output, session) {
             b <- NO_DATA_GRAPH
         }
 
-        subplot(ggplotly(b1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
-                (ggplotly(b2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(b3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+        subplot(ggplotly(b1, tooltip="text", dynamicTicks = TRUE), #%>% add_range(),
+                (ggplotly(b2, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(b3, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
                 nrows=3, shareX = TRUE, shareY = TRUE)
     })
 
@@ -346,10 +342,10 @@ server <- function(input, output, session) {
             b <- NO_DATA_GRAPH
         }
 
-        subplot(ggplotly(t1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
-                (ggplotly(t2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(t3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(t4, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+        subplot(ggplotly(t1, tooltip="text", dynamicTicks = TRUE), #%>% add_range(),
+                (ggplotly(t2, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(t3, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(t4, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
                 nrows=4, shareX = TRUE, shareY = TRUE)
     })
 
@@ -371,8 +367,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+#            add_range()
 
     })
 
@@ -393,8 +389,8 @@ server <- function(input, output, session) {
         } else {
             d <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(d, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(d, dynamicTicks = TRUE) #%>%
+       #     add_range()
 
     })
 
@@ -417,10 +413,54 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+ #           add_range()
     })
 
+    # ------------------ Time Machine tab -----------------------------
+
+
+    output$time_machine_plot <- renderPlot({
+        if(input$big_graph == "Aquatroll Salinity") {
+
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+            bind_rows(dropbox_data()[["aquatroll_200_long"]],
+                      dropbox_data()[["aquatroll_600_long"]]) ->
+                full_trolls_long
+
+                full_trolls_long %>%
+                    mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
+                    group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
+                    summarise(Well_Name = Well_Name,
+                              value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+                    left_join(AQUATROLL_RANGE, by = "variable") -> t
+
+                t %>%
+                    filter(variable == "Salinity") %>%
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    shaded_flood_rect(ymin = -Inf, ymax = Inf) +
+                    geom_line() +
+                    xlab("") -> p
+
+        } else if(input$big_graph == "TEROS Conductivity") {
+
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+            dropbox_data()[["teros"]] %>%
+                filter(variable == "EC") %>%
+                left_join(TEROS_RANGE, by = "variable") -> t
+
+            t %>%
+                group_by(Timestamp, Plot) %>%
+                summarise(mean_value = mean(value), low = mean(low), high = mean(high)) %>%
+                ggplot(aes(Timestamp, mean_value, color = Plot)) +
+                shaded_flood_rect(ymin = -Inf, ymax = Inf) +
+                geom_line() +
+                xlab("") -> p
+
+        }
+
+        print(p)
+    })
 
     # ------------------ Sapflow tab table and graph -----------------------------
 
@@ -561,7 +601,6 @@ server <- function(input, output, session) {
         dropbox_data()[["redox_table_data"]]
     })
 
-
     output$redox_detail_graph <- renderPlotly({
 
         if(length(input$redox_table_rows_selected)) {
@@ -652,6 +691,52 @@ server <- function(input, output, session) {
                         names_from = "Timestamp", values_from = "BattV_Avg") %>%
             datatable()
     })
+
+    # ------------------ ERT tab table and graph -----------------------------
+
+    output$redox_ert_table <- DT::renderDataTable({
+        dataInvalidate()
+        dropbox_data()[["redox_ert_table_data"]]
+    })
+
+    output$redox_ert_detail_graph <- renderPlotly({
+        dataInvalidate()
+
+        if(length(input$redox_ert_table_rows_selected)) {
+
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+            dropbox_data()[["redox_ert_table_data"]] %>%
+                slice(input$redox_ert_table_rows_selected) ->
+                redox_selected
+
+            redox_selected_rowid <- paste(redox_selected$Plot, redox_selected$Depth_cm, redox_selected$Ref)
+
+            dropbox_data()[["redox"]] %>%
+                filter(paste(Plot, Depth_cm, Ref) %in% redox_selected_rowid) ->
+                selected_data
+
+            b <- ggplot(selected_data,
+                        aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot))) +
+                geom_line() +
+                xlab("") +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- b + aes(color = Plot)
+            } else if(length(unique(selected_data$Depth_cm)) > 1)  {
+                b <- b + aes(color = as.factor(Depth_cm))
+            } else {
+                b <- b + aes(color = Ref)
+            }
+
+        } else {
+            b <- NO_DATA_GRAPH
+        }
+
+        plotly::ggplotly(b)
+    })
+
+
 
     # ------------------ Maps tab -----------------------------
 

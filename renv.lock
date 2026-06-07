@@ -317,12 +317,13 @@
       "Package": "compasstools",
       "Version": "2.1",
       "Source": "GitHub",
+      "Remotes": "github::COMPASS-DOE/rdrop2refreshtoken",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "compasstools",
       "RemoteUsername": "COMPASS-DOE",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "85f7d31682481f941e88631461770c318837c292",
+      "RemoteRef": "bypass-dropdir",
+      "RemoteSha": "2d2ed6da5d4c9fbf7c793c7b8a596538aaf0dd49",
       "Requirements": [
         "R",
         "arrow",
@@ -332,7 +333,7 @@
         "readr",
         "tidyr"
       ],
-      "Hash": "f4552b1ddd332d9db84a1d6157f3165a"
+      "Hash": "7d8fee217ee92b0230fa5e800cf8208d"
     },
     "cowplot": {
       "Package": "cowplot",
@@ -1183,16 +1184,16 @@
       ],
       "Hash": "f146a5bfc94db048309712535d4d0aee"
     },
-    "rdrop2": {
-      "Package": "rdrop2",
+    "rdrop2refreshtoken": {
+      "Package": "rdrop2refreshtoken",
       "Version": "0.8.2.2",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "rdrop2",
-      "RemoteUsername": "karthik",
+      "RemoteRepo": "rdrop2refreshtoken",
+      "RemoteUsername": "COMPASS-DOe",
       "RemoteRef": "HEAD",
-      "RemoteSha": "81bedd2f0fbd0ee55dd163230c1a0b26a80162cc",
+      "RemoteSha": "8af0177b4d9e2591c213ebe85233922e760e27f2",
       "Requirements": [
         "R",
         "assertthat",
@@ -1203,7 +1204,7 @@
         "magrittr",
         "purrr"
       ],
-      "Hash": "ce1d19e12e1b719f5885f9a2579d1706"
+      "Hash": "bcd341eff6667f810d77181355d594a2"
     },
     "readr": {
       "Package": "readr",
