@@ -53,9 +53,9 @@ process_redox <- function(token, datadir) {
         progress <- NULL
     }
 
-    pattern <- "Redox15\\.dat$"
+    pattern <- "(ERT.*RedoxTEST|TEMPEST.*Redox15)"
 
-    process_dir(datadir, pattern, read_datalogger_file, dropbox_token = token) %>%
+    process_dir(datadir, pattern, read_datalogger_file, dropbox_token = NULL) %>%
         clean_names() -> redox_raw
 
     redox_raw %>%
@@ -93,13 +93,15 @@ process_redox <- function(token, datadir) {
     df_ert %>%
         pivot_longer(cols = contains("redox_"), names_to = "sensor", values_to = "redox_mv") %>%
         separate(sensor, into = c("scrap", "ref", "sensor"), sep = "_") %>%
-        mutate(plot = "ERT",
-               sensor = as.numeric(sensor),
+        mutate(sensor = as.numeric(sensor),
                depth_cm = case_when(sensor <= 16 ~ 35,
                                     sensor >= 17 & sensor <= 32 ~ 25,
                                     sensor >= 33 & sensor <= 48 ~ 15,
                                     sensor >= 49 ~ 5,
-                                    .default = NA)) %>%
+                                    .default = NA),
+               plot = case_when(ref == "ra" | ref == "rb" ~ "ERT - Freshwater",
+                                ref == "rc" | ref == "rd" ~ "ERT - Saltwater"),
+                                .default = "ERT") %>%
         select(-c(statname, scrap)) %>%
         ungroup() %>%
         mutate(Timestamp = lubridate::as_datetime(timestamp, tz = "EST")) %>%

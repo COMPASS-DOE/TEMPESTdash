@@ -191,6 +191,7 @@ compute_battery <- function(battery, ddt) {
 compute_redox <- function(redox, ddt) {
 
     redox %>%
+        filter(!is.nan(Redox)) %>%
         filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
         redox_filtered
 
@@ -199,6 +200,7 @@ compute_redox <- function(redox, ddt) {
         redox_bdg
 
     redox_filtered %>%
+        ungroup() %>%
         mutate(bad_sensor = which_outside_limits(Redox,
                                                  left_limit = REDOX_RANGE[1],
                                                  right_limit = REDOX_RANGE[2])) %>%

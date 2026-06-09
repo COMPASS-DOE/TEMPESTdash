@@ -458,14 +458,16 @@ server <- function(input, output, session) {
 
             dropbox_data()[["teros"]] %>%
                 filter(variable == "EC") %>%
+                group_by(Timestamp, Plot) %>%
+                summarise(value = mean(value, na.rm = TRUE)) %>%
                 left_join(past_filtered, by = "Plot") -> t
 
             t %>%
-                ggplot(aes(Timestamp, mean_value, color = Plot)) +
+                ggplot() +
                 shaded_flood_rect(ymin = -Inf, ymax = Inf) +
                 geom_hline(aes(yintercept = min_value, linetype = "dotdash")) +
                 geom_hline(aes(yintercept = max_value, linetype = "dotdash")) +
-                geom_line() +
+                geom_line(aes(Timestamp, value, color = Plot)) +
                 xlab("") +
                 facet_wrap(~Plot, ncol = 1, scales = "free_y") -> p
 
