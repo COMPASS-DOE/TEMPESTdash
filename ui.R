@@ -122,18 +122,7 @@ ui <- dashboardPage(
             ),
             tabItem(
                 tabName = "timemachine",
-
-                    selectInput(inputId = "big_graph",
-                                label = "Select data type to graph:",
-                                choices = c("TEROS Conductivity", "Aquatroll Salinity"),
-                                selected = "Aquatroll Salinity"),
-                    checkboxGroupInput(inputId = "toggle",
-                                       label = strong("Show past TEMPEST data:"),
-                                       choices = c("TEMPEST 1",
-                                                   "TEMPEST 2",
-                                                   "TEMPEST 3"),
-                                       selected = "TEMPEST 1"),
-                    plotOutput("time_machine_plot")
+                plotlyOutput("time_machine_plot", height = "800px", width = "100%")
 
             ),
             tabItem(
@@ -163,9 +152,9 @@ ui <- dashboardPage(
             ),
             tabItem(
                 tabName = "ert",
-                DT::dataTableOutput("redox_ert_table"),
-                plotlyOutput("redox_ert_detail_graph")
-
+                plotlyOutput("redox_ert_graph"),
+                plotlyOutput("teros12_ert_graph"),
+                plotlyOutput("teros21_ert_graph")
             ),
             tabItem(
                 tabName = "battery",

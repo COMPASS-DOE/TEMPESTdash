@@ -419,48 +419,38 @@ server <- function(input, output, session) {
 
     # ------------------ Time Machine tab -----------------------------
 
+    output$time_machine_plot <- renderPlotly({
 
-    output$time_machine_plot <- renderPlot({
-        if(input$big_graph == "Aquatroll Salinity") {
+        flood_start_4 <- as.POSIXct("2026-06-08 05:00:00", tz = "EST")
 
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
-            bind_rows(dropbox_data()[["aquatroll_200_long"]],
-                      dropbox_data()[["aquatroll_600_long"]]) ->
-                full_trolls_long
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
 
-                full_trolls_long %>%
-                    mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
-                    group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
-                    summarise(Well_Name = Well_Name,
-                              value = mean(value, na.rm = TRUE), .groups = "drop") %>%
-                    left_join(AQUATROLL_RANGE, by = "variable") -> t
+        readRDS("past_teros_ec.RDS") -> past
 
-                t %>%
-                    filter(variable == "Salinity") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
-                    shaded_flood_rect(ymin = -Inf, ymax = Inf) +
-                    geom_line() +
-                    xlab("") -> p
+        dropbox_data()[["teros"]] %>%
+            filter(variable == "EC") -> teros
 
-        } else if(input$big_graph == "TEROS Conductivity") {
+        teros %>%
+            group_by(Timestamp, Plot) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            mutate(Event = "T4",
+                   diff = as.POSIXct(Timestamp, tz = "EST") - flood_start_4,
+                   hour = time_length(seconds_to_period(diff), unit = "hour")) %>%
+            bind_rows(past) -> t
 
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
-            dropbox_data()[["teros"]] %>%
-                filter(variable == "EC") %>%
-                left_join(TEROS_RANGE, by = "variable") -> t
+        ggplot(t, aes(hour, value, color = Event)) +
+            geom_line(aes(linewidth = Event)) +
+            coord_cartesian(xlim = c(-10, NA)) +
+            facet_wrap(~Plot, ncol = 1) +
+            scale_color_manual(
+                values = c("T4" = "black", "T3" = "lightcyan4", "T2" = "lightcyan3", "T1" = "lightcyan2")) +
+            scale_linewidth_manual(values = c("T4" = 2, "T3" = 1, "T2" = 1, "T1" = 1)) -> p
 
-            t %>%
-                group_by(Timestamp, Plot) %>%
-                summarise(mean_value = mean(value), low = mean(low), high = mean(high)) %>%
-                ggplot(aes(Timestamp, mean_value, color = Plot)) +
-                shaded_flood_rect(ymin = -Inf, ymax = Inf) +
-                geom_line() +
-                xlab("") -> p
+        ggplotly(p)
 
-        }
-
-        print(p)
     })
+
+
 
     # ------------------ Sapflow tab table and graph -----------------------------
 
@@ -694,49 +684,51 @@ server <- function(input, output, session) {
 
     # ------------------ ERT tab table and graph -----------------------------
 
-    output$redox_ert_table <- DT::renderDataTable({
-        dataInvalidate()
-        dropbox_data()[["redox_ert_table_data"]]
-    })
-
-    output$redox_ert_detail_graph <- renderPlotly({
+    output$redox_ert_graph <- renderPlotly({
         dataInvalidate()
 
-        if(length(input$redox_ert_table_rows_selected)) {
-
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
-            dropbox_data()[["redox_ert_table_data"]] %>%
-                slice(input$redox_ert_table_rows_selected) ->
-                redox_selected
-
-            redox_selected_rowid <- paste(redox_selected$Plot, redox_selected$Depth_cm, redox_selected$Ref)
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
 
             dropbox_data()[["redox"]] %>%
-                filter(paste(Plot, Depth_cm, Ref) %in% redox_selected_rowid) ->
-                selected_data
-
-            b <- ggplot(selected_data,
-                        aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot))) +
+                filter(Plot %in% c("ERT - Freshwater", "ERT - Saltwater")) %>%
+                ggplot(aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot), color = Plot)) +
                 geom_line() +
                 xlab("") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
 
-            if(length(unique(selected_data$Plot)) > 1) {
-                b <- b + aes(color = Plot)
-            } else if(length(unique(selected_data$Depth_cm)) > 1)  {
-                b <- b + aes(color = as.factor(Depth_cm))
-            } else {
-                b <- b + aes(color = Ref)
-            }
+        plotly::ggplotly(p)
 
-        } else {
-            b <- NO_DATA_GRAPH
-        }
+    })
 
-        plotly::ggplotly(b)
+    output$teros12_ert_graph <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+        dropbox_data()[["teros"]] %>%
+            filter(stringr::str_starts(ID, "Teros12")) %>%
+            ggplot(aes(Timestamp, value, group = ID, color = Depth)) +
+            geom_line() +
+            facet_wrap(variable~Plot, scales = "free_y", ncol = 2) +
+            xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
+
+       plotly::ggplotly(p)
     })
 
 
+    output$teros21_ert_graph <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+        dropbox_data()[["teros"]] %>%
+            filter(stringr::str_starts(ID, "Teros21")) %>%
+            ggplot(aes(Timestamp, value, group = ID, color = Depth)) +
+            geom_line() +
+            facet_wrap(variable~Plot, scales = "free_y", ncol = 2) +
+            xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
+
+        plotly::ggplotly(p)
+
+    })
 
     # ------------------ Maps tab -----------------------------
 
