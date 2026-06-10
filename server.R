@@ -419,63 +419,32 @@ server <- function(input, output, session) {
 
     # ------------------ Time Machine tab -----------------------------
 
-    read_csv("past_flood_ranges_teros-ec-15.csv") %>%
-        mutate(Plot = case_when(Plot == "C" ~ "Control",
-                                Plot == "F" ~ "Freshwater",
-                                Plot == "S" ~ "Saltwater",
-                                .default = Plot)) %>%
-        group_by(Site, Plot, Event) %>%
-        summarise(across(c(mean_value, min_value, max_value), mean, na.rm = TRUE)) -> past_floods_teros
-
     output$time_machine_plot <- renderPlot({
-        if(input$big_graph == "Aquatroll Salinity") {
 
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
-            bind_rows(dropbox_data()[["aquatroll_200_long"]],
-                      dropbox_data()[["aquatroll_600_long"]]) ->
-                full_trolls_long
+        flood_start_4 <- as.POSIXct("2026-06-08 05:00:00", tz = "EST")
 
-                full_trolls_long %>%
-                    mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
-                    group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
-                    summarise(Well_Name = Well_Name,
-                              value = mean(value, na.rm = TRUE), .groups = "drop") %>%
-                    left_join(AQUATROLL_RANGE, by = "variable") -> t
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
 
-                t %>%
-                    filter(variable == "Salinity") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
-                    shaded_flood_rect(ymin = -Inf, ymax = Inf) +
-                    geom_line() +
-                    xlab("") -> p
+        readRDS("past_teros_ec.RDS") -> past
 
-        } else if(input$big_graph == "TEROS Conductivity") {
+        dropbox_data()[["teros"]] %>%
+            filter(variable == "EC") %>%
+            group_by(Timestamp, Plot) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            mutate(Event = "T4",
+                   diff = as.POSIXct(Timestamp, tz = "EST") - flood_start_4,
+                   hour = time_length(seconds_to_period(diff), unit = "hour")) %>%
+            bind_rows(past) -> t
 
-            past_floods_teros %>%
-                filter(Event == input$toggle) -> past_filtered
+        ggplot(t, aes(hour, value, color = Event)) +
+            geom_line() +
+            facet_wrap(~Plot, ncol = 1) -> p
 
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
-
-            dropbox_data()[["teros"]] %>%
-                filter(variable == "EC") %>%
-                group_by(Timestamp, Plot) %>%
-                summarise(value = mean(value, na.rm = TRUE)) %>%
-                left_join(past_filtered, by = "Plot") -> t
-
-            t %>%
-                ggplot() +
-                shaded_flood_rect(ymin = -Inf, ymax = Inf) +
-                geom_hline(aes(yintercept = min_value, linetype = "dotdash")) +
-                geom_hline(aes(yintercept = max_value, linetype = "dotdash")) +
-                geom_line(aes(Timestamp, value, color = Plot)) +
-                xlab("") +
-                facet_wrap(~Plot, ncol = 1, scales = "free_y") -> p
-
-        }
-
-        print(p)
+        ggplotly(p)
 
     })
+
+
 
     # ------------------ Sapflow tab table and graph -----------------------------
 
