@@ -419,7 +419,7 @@ server <- function(input, output, session) {
 
     # ------------------ Time Machine tab -----------------------------
 
-    output$time_machine_plot <- renderPlot({
+    output$time_machine_plot <- renderPlotly({
 
         flood_start_4 <- as.POSIXct("2026-06-08 05:00:00", tz = "EST")
 
@@ -428,7 +428,9 @@ server <- function(input, output, session) {
         readRDS("past_teros_ec.RDS") -> past
 
         dropbox_data()[["teros"]] %>%
-            filter(variable == "EC") %>%
+            filter(variable == "EC") -> teros
+
+        teros %>%
             group_by(Timestamp, Plot) %>%
             summarise(value = mean(value, na.rm = TRUE)) %>%
             mutate(Event = "T4",
@@ -437,8 +439,12 @@ server <- function(input, output, session) {
             bind_rows(past) -> t
 
         ggplot(t, aes(hour, value, color = Event)) +
-            geom_line() +
-            facet_wrap(~Plot, ncol = 1) -> p
+            geom_line(aes(linewidth = Event)) +
+            coord_cartesian(xlim = c(-10, NA)) +
+            facet_wrap(~Plot, ncol = 1) +
+            scale_color_manual(
+                values = c("T4" = "black", "T3" = "lightcyan4", "T2" = "lightcyan3", "T1" = "lightcyan2")) +
+            scale_linewidth_manual(values = c("T4" = 2, "T3" = 1, "T2" = 1, "T1" = 1)) -> p
 
         ggplotly(p)
 

@@ -122,18 +122,7 @@ ui <- dashboardPage(
             ),
             tabItem(
                 tabName = "timemachine",
-
-                    selectInput(inputId = "big_graph",
-                                label = "Select data type to graph:",
-                                choices = c("TEROS Conductivity"),
-                                selected = "TEROS Conductivity"),
-                    radioButtons(inputId = "toggle",
-                                       label = strong("Show past TEMPEST data:"),
-                                       choices = c("TEMPEST 1" = "TEMPEST1",
-                                                   "TEMPEST 2" = "TEMPEST2",
-                                                   "TEMPEST 3" = "TEMPEST3"),
-                                       selected = "TEMPEST1"),
-                    plotOutput("time_machine_plot")
+                plotlyOutput("time_machine_plot", height = "800px", width = "100%")
 
             ),
             tabItem(
