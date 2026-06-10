@@ -716,7 +716,7 @@ server <- function(input, output, session) {
 
             dropbox_data()[["redox"]] %>%
                 filter(Plot %in% c("ERT - Freshwater", "ERT - Saltwater")) %>%
-                ggplot(aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot))) +
+                ggplot(aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot), color = Plot)) +
                 geom_line() +
                 xlab("") +
                 xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
