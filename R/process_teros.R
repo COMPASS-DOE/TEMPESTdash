@@ -49,7 +49,6 @@ process_teros <- function(token, datadir) {
         filter(!is.na(value)) %>%
         rename(Timestamp = TIMESTAMP) %>%
         mutate(Timestamp = ymd_hms(Timestamp, tz = "EST")) %>%
-        select(-Inst) %>%
         separate(channel, into = c("Data_Table_ID", "variable"), sep = ",") %>%
         mutate(Data_Table_ID = as.integer(gsub("Teros21(", "", Data_Table_ID, fixed = TRUE)),
                variable = as.integer(gsub(")", "", variable, fixed = TRUE)),
@@ -75,7 +74,6 @@ process_teros <- function(token, datadir) {
         filter(!is.na(value)) %>%
         rename(Timestamp = TIMESTAMP) %>%
         mutate(Timestamp = ymd_hms(Timestamp, tz = "EST")) %>%
-        select(-Inst) %>%
         separate(channel, into = c("Data_Table_ID", "variable"), sep = ",") %>%
         mutate(Data_Table_ID = as.integer(gsub("Teros12(", "", Data_Table_ID, fixed = TRUE)),
                variable = as.integer(gsub(")", "", variable, fixed = TRUE)),

@@ -709,49 +709,51 @@ server <- function(input, output, session) {
 
     # ------------------ ERT tab table and graph -----------------------------
 
-    output$redox_ert_table <- DT::renderDataTable({
-        dataInvalidate()
-        dropbox_data()[["redox_ert_table_data"]]
-    })
-
-    output$redox_ert_detail_graph <- renderPlotly({
+    output$redox_ert_graph <- renderPlotly({
         dataInvalidate()
 
-        if(length(input$redox_ert_table_rows_selected)) {
-
-            ddt <- reactive({ DASHBOARD_DATETIME() })()
-            dropbox_data()[["redox_ert_table_data"]] %>%
-                slice(input$redox_ert_table_rows_selected) ->
-                redox_selected
-
-            redox_selected_rowid <- paste(redox_selected$Plot, redox_selected$Depth_cm, redox_selected$Ref)
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
 
             dropbox_data()[["redox"]] %>%
-                filter(paste(Plot, Depth_cm, Ref) %in% redox_selected_rowid) ->
-                selected_data
-
-            b <- ggplot(selected_data,
-                        aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot))) +
+                filter(Plot %in% c("ERT - Freshwater", "ERT - Saltwater")) %>%
+                ggplot(aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot))) +
                 geom_line() +
                 xlab("") +
-                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
 
-            if(length(unique(selected_data$Plot)) > 1) {
-                b <- b + aes(color = Plot)
-            } else if(length(unique(selected_data$Depth_cm)) > 1)  {
-                b <- b + aes(color = as.factor(Depth_cm))
-            } else {
-                b <- b + aes(color = Ref)
-            }
+        plotly::ggplotly(p)
 
-        } else {
-            b <- NO_DATA_GRAPH
-        }
+    })
 
-        plotly::ggplotly(b)
+    output$teros12_ert_graph <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+        dropbox_data()[["teros"]] %>%
+            filter(stringr::str_starts(ID, "Teros12")) %>%
+            ggplot(aes(Timestamp, value, group = ID, color = Depth)) +
+            geom_line() +
+            facet_wrap(variable~Plot, scales = "free_y", ncol = 2) +
+            xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
+
+       plotly::ggplotly(p)
     })
 
 
+    output$teros21_ert_graph <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+        dropbox_data()[["teros"]] %>%
+            filter(stringr::str_starts(ID, "Teros21")) %>%
+            ggplot(aes(Timestamp, value, group = ID, color = Depth)) +
+            geom_line() +
+            facet_wrap(variable~Plot, scales = "free_y", ncol = 2) +
+            xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
+
+        plotly::ggplotly(p)
+
+    })
 
     # ------------------ Maps tab -----------------------------
 
