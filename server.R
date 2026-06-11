@@ -65,6 +65,22 @@ server <- function(input, output, session) {
             redox <- readRDS("offline-data/redox")
             battery <- readRDS("offline-data/battery")
         } else {
+
+            # sapflow <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/sapflow.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # teros <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/teros.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # atroll <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/aquatroll.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # aquatroll <- list(
+            #     aquatroll_600 = filter(atroll, Instrument == "TROLL600"),
+            #     aquatroll_200 = filter(atroll, Instrument == "TROLL200")
+            # )
+            # sapflow %>%
+            #     select(Timestamp, BattV_Avg, Plot, Logger) %>%
+            #     group_by(Plot, Logger, Timestamp) %>%
+            #     summarise(BattV_Avg = mean(BattV_Avg), .groups = "drop") ->
+            #     battery
+            # redox <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/redox.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # do <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/do.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+
             sapflow <- withProgress(process_sapflow(token, datadir), message = "Updating sapflow...")
             teros <- withProgress(process_teros(token, datadir), message = "Updating TEROS...")
             atroll <- withProgress(process_aquatroll(token, datadir), message = "Updating AquaTroll...")
@@ -359,6 +375,8 @@ server <- function(input, output, session) {
             redox %>%
                 ggplot(aes(Timestamp, Redox, color = Plot, group = interaction(Plot, Depth_cm), linetype = Ref)) +
                 shaded_flood_rect(ymin = 0, ymax = 1000) +
+                geom_hline(aes(yintercept = min(REDOX_RANGE)), color = "grey", linetype = 2) +
+                geom_hline(aes(yintercept = max(REDOX_RANGE)), color = "grey", linetype = 2) +
                 geom_line() +
                 xlab("") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
@@ -442,6 +460,7 @@ server <- function(input, output, session) {
             geom_line(aes(linewidth = Event)) +
             coord_cartesian(xlim = c(-10, NA)) +
             facet_wrap(~Plot, ncol = 1) +
+            ylab("Soil Electrical Conductivity - 15cm") +
             scale_color_manual(
                 values = c("T4" = "black", "T3" = "lightcyan4", "T2" = "lightcyan3", "T1" = "lightcyan2")) +
             scale_linewidth_manual(values = c("T4" = 2, "T3" = 1, "T2" = 1, "T1" = 1)) -> p
@@ -691,9 +710,10 @@ server <- function(input, output, session) {
 
             dropbox_data()[["redox"]] %>%
                 filter(Plot %in% c("ERT - Freshwater", "ERT - Saltwater")) %>%
-                ggplot(aes(Timestamp, Redox, group = interaction(Depth_cm, Ref, Plot), color = Plot)) +
+                ggplot(aes(Timestamp, Redox, group = interaction(as.factor(Depth_cm), Ref, Plot), color = Plot)) +
                 geom_line() +
                 xlab("") +
+                theme_minimal(base_size = 22) +
                 xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
 
         plotly::ggplotly(p)
