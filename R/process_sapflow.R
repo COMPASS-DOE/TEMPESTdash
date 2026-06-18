@@ -6,7 +6,7 @@ library(dplyr)
 library(tidyr)
 
 # This only needs to be done once
-sf_inventory <- read_csv("design-doc-copies/sapflow_inventory copy.csv", col_types = "ccdcdddclc")
+sf_inventory <- read_csv("design-doc-copies/sapflow_inventory copy.csv", col_types = "clcdccdddc")
 
 process_sapflow <- function(token, datadir) {
 
@@ -23,7 +23,7 @@ process_sapflow <- function(token, datadir) {
         left_join(sf_inventory, by = c("Logger", "Port")) %>%
         filter(!is.na(Tree_Code)) %>% # remove ports that don't have any sensors
         select(Plot, Timestamp, Record, BattV_Avg, Port, Value, Logger,
-               Sapflow_ID = Tree_Code, Grid_Square, Out_Of_Plot, Species, Installation_Date) %>%
+               Sapflow_ID = Tree_Code, Grid_Square, Out_Of_Plot, Species_code, Installation_Date) %>%
         mutate(Deep_Sensor = grepl("D", Sapflow_ID),
                Grid_Letter = substring(Grid_Square, 1, 1),
                Grid_Number = substring(Grid_Square, 2, 2)) %>%
@@ -38,5 +38,5 @@ process_sapflow <- function(token, datadir) {
     }
 
     # Cut the memory footprint of the sapflow data by almost half and return
-    select(sapflow, Plot, Timestamp, Value, Sapflow_ID, Logger, BattV_Avg, Out_Of_Plot, Species, Grid_Square)
+    select(sapflow, Plot, Timestamp, Value, Sapflow_ID, Logger, Port, Species_code, Out_Of_Plot, BattV_Avg, Grid_Square)
 }
