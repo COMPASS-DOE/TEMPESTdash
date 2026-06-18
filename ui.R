@@ -98,11 +98,11 @@ ui <- dashboardPage(
                            ),
                            tabPanel(
                                title = "TEROS",
-                               plotlyOutput("teros_plot", height = "400px")
+                               plotlyOutput("teros_plot", height = "700px")
                            ),
                            tabPanel(
                                title = "AquaTroll",
-                               plotlyOutput("aquatroll_plot", height = "400px")
+                               plotlyOutput("aquatroll_plot", height = "700px")
                            ),
                            tabPanel(
                                title = "Redox",
