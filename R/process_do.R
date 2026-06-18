@@ -1,51 +1,9 @@
-# These are global settings for the TEMPEST data dashboard
-# June 2023
+# Script to process DO sensors
 
-library(ggplot2)
-theme_set(theme_minimal())
-library(dplyr)
-library(shiny)
-library(DT)
 library(readr)
 library(lubridate)
-library(rdrop2refreshtoken)
-library(shinybusy)
-library(plotly)
-library(janitor)
-
-if(!require("compasstools")) {
-    stop("Need to devtools::install_github('COMPASS-DOE/compasstools@bypass-dropdir')")
-}
-library(compasstools)
-
-# The TESTING_STATE flag causes the server to load static data in offline-data/
-# When writing new code or debugging, it's often useful to set this to TRUE
-# so as not to spend time downloading from Dropbox
-TESTING <- FALSE
-
-LOCAL <- TRUE
-
-# Flooding event length (hours)
-EVENT_LENGTH <- 10
-
-TEXT_MSG_USERS <- tribble(
-    ~name,     ~number,       ~carrier,
-    "SP",      "3016063322",  "Verizon",
-    "BBL",     "6086582217",  "T-Mobile",
-    "AMP",     "5203491898",  "Verizon",
-    "Julia",   "8644205609",  "Verizon"
-)
-
-GRAPH_TIME_WINDOW <- 24   # hours back from the dashboard datetime
-GRAPH_TIME_INTERVAL <- "15 minutes"  # used by round_date in graphs
-FLAG_TIME_WINDOW <- 1         # hours back from the dashboard datetime
-
-# The 'no data' graph that's shown if no rows are selected, etc.
-NO_DATA_GRAPH <- ggplot() +
-    annotate("text", x = 1, y = 1, label = "(No selection)", size = 12) +
-    theme(axis.title = element_blank(),
-          axis.text  = element_blank(),
-    )
+library(dplyr)
+library(tidyr)
 
 process_dir <- function(datadir, pattern, read_function,
                         dropbox_token = NULL,
@@ -80,4 +38,33 @@ process_dir <- function(datadir, pattern, read_function,
     }
     x <- lapply(s_files, f, read_function, dropbox_token, length(s_files))
     bind_rows(x)
+}
+
+process_do <- function(token, datadir) {
+
+    if(!is.null(getDefaultReactiveDomain())) {
+        progress <- incProgress
+    } else {
+        progress <- NULL
+    }
+
+    pattern <- "Pyro\\.dat$"
+
+    process_dir(datadir, pattern, read_datalogger_file, dropbox_token = token) %>%
+        pivot_longer(ch1_Status:ch4_PerO2, names_to = c("Channel", "Variable"), names_sep = "_", values_to = "Value") %>%
+        separate(Logger, into = c("one", "Logger")) %>%
+        mutate(Timestamp = ymd_hms(TIMESTAMP, tz = "EST"),
+               Plot = case_when(Logger == "12" ~ "Control",
+                                Logger == "21" ~ "Freshwater",
+                                Logger == "33" ~ "Saltwater",
+                                .default = Logger),
+               Depth_cm = case_when(Channel == "ch1" ~ "5",
+                                    Channel == "ch2" ~ "15",
+                                    Channel == "ch3" ~ "30",
+                                    Channel == "ch4" ~ "50",
+                                    .default = Channel)) %>%
+        filter(Variable %in% c("PerAirSat", "Temp")) %>%
+        select(Logger, Plot, Timestamp, Variable, Value, Depth_cm) %>%
+        filter(Logger != 13)
+
 }

@@ -22,10 +22,13 @@ server <- function(input, output, session) {
 
     # The server normally accesses the SERC Dropbox to download data
     # If we are TESTING, however, skip this and use local test data only
-    if(!TESTING) {
+    if(!TESTING & !LOCAL) {
         datadir <- "TEMPEST_PNNL_Data/Current_Data"
         token <- readRDS("droptoken.rds")
-        cursor <- drop_dir(datadir, cursor = TRUE, dtoken = token)
+        cursor <- rdrop2refreshtoken::drop_dir(datadir, cursor = TRUE, dtoken = token)
+    } else if (!TESTING & LOCAL) {
+        datadir <- "~/Dropbox (Smithsonian)/TEMPEST_PNNL_Data/Current_data/"
+        token <- NULL
     }
 
     # DASHBOARD_DATETIME is the datetime that the dashboard is showing
@@ -52,11 +55,32 @@ server <- function(input, output, session) {
         dataInvalidate()
 
         if(TESTING) {
-            sapflow <- readRDS("offline-data/sapflow") %>% rename(Sapflow_ID = Tree_Code)
+            sapflow <- readRDS("offline-data/sapflow")# %>% rename(Sapflow_ID = Tree_Code)
             teros <- readRDS("offline-data/teros")
-            aquatroll <- readRDS("offline-data/aquatroll")
+            aquatroll <- list(
+                aquatroll_600 = readRDS("offline-data/aquatroll") %>% filter(Instrument == "TROLL600"),
+                aquatroll_200 = readRDS("offline-data/aquatroll") %>% filter(Instrument == "TROLL200")
+            )
+            do <- readRDS("offline-data/do")
+            redox <- readRDS("offline-data/redox")
             battery <- readRDS("offline-data/battery")
         } else {
+
+            # sapflow <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/sapflow.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # teros <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/teros.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # atroll <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/aquatroll.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # aquatroll <- list(
+            #     aquatroll_600 = filter(atroll, Instrument == "TROLL600"),
+            #     aquatroll_200 = filter(atroll, Instrument == "TROLL200")
+            # )
+            # sapflow %>%
+            #     select(Timestamp, BattV_Avg, Plot, Logger) %>%
+            #     group_by(Plot, Logger, Timestamp) %>%
+            #     summarise(BattV_Avg = mean(BattV_Avg), .groups = "drop") ->
+            #     battery
+            # redox <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/redox.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+            # do <- read_csv("https://raw.githubusercontent.com/stephpenn1/workflow-example/refs/heads/main/do.csv") %>% mutate(Timestamp = force_tz(Timestamp, tzone = "EST"))
+
             sapflow <- withProgress(process_sapflow(token, datadir), message = "Updating sapflow...")
             teros <- withProgress(process_teros(token, datadir), message = "Updating TEROS...")
             atroll <- withProgress(process_aquatroll(token, datadir), message = "Updating AquaTroll...")
@@ -70,6 +94,7 @@ server <- function(input, output, session) {
                 summarise(BattV_Avg = mean(BattV_Avg), .groups = "drop") ->
                 battery
             redox <- withProgress(process_redox(token, datadir), message = "Updating Redox...")
+            do <- withProgress(process_do(token, datadir), message = "Updating soil DO...")
         }
 
         # Do limits testing and compute data needed for badges
@@ -78,11 +103,12 @@ server <- function(input, output, session) {
         sapflow_list <- compute_sapflow(sapflow, ddt)
         teros_list <- compute_teros(teros, ddt)
         aquatroll_list <- compute_aquatroll(aquatroll, ddt)
-        battery_list <- compute_battery(battery, ddt)
         redox_list <- compute_redox(redox, ddt)
+        do_list <- compute_do(do, ddt)
+        battery_list <- compute_battery(battery, ddt)
 
         # Return data and badge information
-        c(sapflow_list, teros_list, aquatroll_list, battery_list, redox_list)
+        c(sapflow_list, teros_list, aquatroll_list, redox_list, do_list, battery_list)
     })
 
 
@@ -117,15 +143,8 @@ server <- function(input, output, session) {
     })
 
     output$sapflow_bad_sensors <- DT::renderDataTable({
-        ddt <- reactive({ DASHBOARD_DATETIME() })()
-
-        dropbox_data()[["sapflow"]] %>%
-            filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) ->
-            sapflow
-
-        vals <- bad_sensors(sapflow, sapflow$Value, "Sapflow_ID", limits = SAPFLOW_RANGE)
-
-        datatable(vals, options = list(searching = FALSE, pageLength = 5))
+        dropbox_data()[["sapflow_bad_sensors"]] %>%
+            datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
     output$teros_bad_sensors <- DT::renderDataTable({
@@ -135,6 +154,16 @@ server <- function(input, output, session) {
 
     output$troll_bad_sensors <- DT::renderDataTable({
         dropbox_data()[["aquatroll_bad_sensors"]] %>%
+            datatable(options = list(searching = FALSE, pageLength = 5))
+    })
+
+    output$redox_bad_sensors <- DT::renderDataTable({
+        dropbox_data()[["redox_bad_sensors"]] %>%
+            datatable(options = list(searching = FALSE, pageLength = 5))
+    })
+
+    output$do_bad_sensors <- DT::renderDataTable({
+        dropbox_data()[["do_bad_sensors"]] %>%
             datatable(options = list(searching = FALSE, pageLength = 5))
     })
 
@@ -190,8 +219,8 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+#            add_range()
     })
 
     output$teros_plot <- renderPlotly({
@@ -255,9 +284,9 @@ server <- function(input, output, session) {
             b <- NO_DATA_GRAPH
         }
 
-        subplot(ggplotly(b1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
-                (ggplotly(b2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(b3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+        subplot(ggplotly(b1, tooltip="text", dynamicTicks = TRUE), #%>% add_range(),
+                (ggplotly(b2, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(b3, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
                 nrows=3, shareX = TRUE, shareY = TRUE)
     })
 
@@ -329,10 +358,10 @@ server <- function(input, output, session) {
             b <- NO_DATA_GRAPH
         }
 
-        subplot(ggplotly(t1, tooltip="text", dynamicTicks = TRUE) %>% add_range(),
-                (ggplotly(t2, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(t3, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
-                (ggplotly(t4, tooltip="text", dynamicTicks = TRUE) %>% add_range()),
+        subplot(ggplotly(t1, tooltip="text", dynamicTicks = TRUE), #%>% add_range(),
+                (ggplotly(t2, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(t3, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
+                (ggplotly(t4, tooltip="text", dynamicTicks = TRUE)), #%>% add_range()),
                 nrows=4, shareX = TRUE, shareY = TRUE)
     })
 
@@ -344,8 +373,10 @@ server <- function(input, output, session) {
 
         if(nrow(redox)) {
             redox %>%
-                ggplot(aes(Timestamp, Redox, color = Plot, group = interaction(Plot, Ref, Depth_cm), linetype = Ref)) +
+                ggplot(aes(Timestamp, Redox, color = Plot, group = interaction(Plot, Depth_cm), linetype = Ref)) +
                 shaded_flood_rect(ymin = 0, ymax = 1000) +
+                geom_hline(aes(yintercept = min(REDOX_RANGE)), color = "grey", linetype = 2) +
+                geom_hline(aes(yintercept = max(REDOX_RANGE)), color = "grey", linetype = 2) +
                 geom_line() +
                 xlab("") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
@@ -354,8 +385,30 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+#            add_range()
+
+    })
+
+    output$do_plot <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+        dropbox_data()[["do"]] ->
+            do
+
+        if(nrow(do)) {
+            do %>%
+                filter(Variable == "PerAirSat") %>%
+                ggplot(aes(Timestamp, Value, group = interaction(Plot, Depth_cm), color = Depth_cm)) +
+                shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
+                geom_line() +
+                xlab("") +
+                coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> d
+        } else {
+            d <- NO_DATA_GRAPH
+        }
+        plotly::ggplotly(d, dynamicTicks = TRUE) #%>%
+       #     add_range()
 
     })
 
@@ -378,9 +431,44 @@ server <- function(input, output, session) {
         } else {
             b <- NO_DATA_GRAPH
         }
-        plotly::ggplotly(b, dynamicTicks = TRUE) %>%
-            add_range()
+        plotly::ggplotly(b, dynamicTicks = TRUE) #%>%
+ #           add_range()
     })
+
+    # ------------------ Time Machine tab -----------------------------
+
+    output$time_machine_plot <- renderPlotly({
+
+        flood_start_4 <- as.POSIXct("2026-06-08 05:00:00", tz = "EST")
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+        readRDS("past_teros_ec.RDS") -> past
+
+        dropbox_data()[["teros"]] %>%
+            filter(variable == "EC") -> teros
+
+        teros %>%
+            group_by(Timestamp, Plot) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            mutate(Event = "T4",
+                   diff = as.POSIXct(Timestamp, tz = "EST") - flood_start_4,
+                   hour = time_length(seconds_to_period(diff), unit = "hour")) %>%
+            bind_rows(past) -> t
+
+        ggplot(t, aes(hour, value, color = Event)) +
+            geom_line(aes(linewidth = Event)) +
+            coord_cartesian(xlim = c(-10, NA)) +
+            facet_wrap(~Plot, ncol = 1, scales = "free_y") +
+            ylab("Soil Electrical Conductivity - 15cm") +
+            scale_color_manual(
+                values = c("T4" = "black", "T3" = "lightcyan4", "T2" = "lightcyan3", "T1" = "lightcyan2")) +
+            scale_linewidth_manual(values = c("T4" = 2, "T3" = 1, "T2" = 1, "T1" = 1)) -> p
+
+        ggplotly(p)
+
+    })
+
 
 
     # ------------------ Sapflow tab table and graph -----------------------------
@@ -522,7 +610,6 @@ server <- function(input, output, session) {
         dropbox_data()[["redox_table_data"]]
     })
 
-
     output$redox_detail_graph <- renderPlotly({
 
         if(length(input$redox_table_rows_selected)) {
@@ -558,6 +645,45 @@ server <- function(input, output, session) {
         plotly::ggplotly(b)
     })
 
+    # ------------------ Soil DO tab table and graph -----------------------------
+    output$do_table <- DT::renderDataTable({
+        dataInvalidate()
+        dropbox_data()[["do_table_data"]]
+    })
+
+    output$do_detail_graph <- renderPlotly({
+
+        if(length(input$do_table_rows_selected)) {
+            ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+            dropbox_data()[["do_table_data"]] %>%
+                slice(input$do_table_rows_selected) ->
+                dosensor_selected
+
+            dropbox_data()[["do"]] %>%
+                filter(Variable %in% dosensor_selected$Variable,
+                       Depth_cm %in% dosensor_selected$Depth_cm,
+                       Plot %in% dosensor_selected$Plot) -> selected_data
+
+            b <- ggplot(selected_data,
+                        aes(Timestamp, Value, group = interaction(Plot, Depth_cm))) +
+                geom_line() +
+                xlab("") +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt))
+            # Try to assign color intelligently. If different plots are selected,
+            # have that be the color; otherwise by depth
+            if(length(unique(selected_data$Plot)) > 1) {
+                b <- b + aes(color = Plot)
+            } else if(length(unique(selected_data$Depth_cm)) > 1)  {
+                b <- b + aes(color = Depth_cm)
+            }
+
+        } else {
+            b <- NO_DATA_GRAPH
+        }
+        plotly::ggplotly(b)
+    })
+
     # ------------------ Battery tab table and graph -----------------------------
 
     output$btable <- DT::renderDataTable({
@@ -573,6 +699,55 @@ server <- function(input, output, session) {
             pivot_wider(id_cols = c("Plot", "Logger"),
                         names_from = "Timestamp", values_from = "BattV_Avg") %>%
             datatable()
+    })
+
+    # ------------------ ERT tab table and graph -----------------------------
+
+    output$redox_ert_graph <- renderPlotly({
+        dataInvalidate()
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+            dropbox_data()[["redox"]] %>%
+                filter(Plot %in% c("ERT - Freshwater", "ERT - Saltwater")) %>%
+                ggplot(aes(Timestamp, Redox, group = interaction(as.factor(Depth_cm), Ref, Plot), color = Plot)) +
+                geom_line() +
+                xlab("") +
+                theme_minimal(base_size = 22) +
+                xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
+
+        plotly::ggplotly(p)
+
+    })
+
+    output$teros12_ert_graph <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+        dropbox_data()[["teros"]] %>%
+            filter(stringr::str_starts(ID, "Teros12")) %>%
+            ggplot(aes(Timestamp, value, group = ID, color = Depth)) +
+            geom_line() +
+            facet_wrap(variable~Plot, scales = "free_y", ncol = 2) +
+            xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
+
+       plotly::ggplotly(p)
+    })
+
+
+    output$teros21_ert_graph <- renderPlotly({
+
+        ddt <- reactive({ DASHBOARD_DATETIME() })()
+
+        dropbox_data()[["teros"]] %>%
+            filter(stringr::str_starts(ID, "Teros21")) %>%
+            ggplot(aes(Timestamp, value, group = ID, color = Depth)) +
+            geom_line() +
+            facet_wrap(variable~Plot, scales = "free_y", ncol = 2) +
+            xlim(c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) -> p
+
+        plotly::ggplotly(p)
+
     })
 
     # ------------------ Maps tab -----------------------------
@@ -611,6 +786,20 @@ server <- function(input, output, session) {
                  icon = icon("water")
         )
     })
+    output$redox_bdg <- renderValueBox({
+        valueBox(dropbox_data()[["redox_bdg"]]$percent_in[1],
+                 "Redox",
+                 color = dropbox_data()[["redox_bdg"]]$color[1],
+                 icon = icon("face-smile")
+        )
+    })
+    output$do_bdg <- renderValueBox({
+        valueBox(dropbox_data()[["do_bdg"]]$percent_in[1],
+                 "Soil DO",
+                 color = dropbox_data()[["do_bdg"]]$color[1],
+                 icon = icon("worm")
+       )
+    })
     output$battery_bdg <- renderValueBox({
         valueBox(dropbox_data()[["battery_bdg"]]$percent_in[1],
                  "Battery",
@@ -621,15 +810,15 @@ server <- function(input, output, session) {
 
 
     # ------------------ Text alerts -----------------------------
-
-    observeEvent({
-        # This will calculate values and send out messages to everyone in "new_user" df
-        # could just have people not choose what they want alerts for?
-        #initial_alert()
-        alertInvalidate()
-    }, {
-        # send_alerts is defined in R/alerts_module.R
-        send_alerts(dropbox_data)
-    })
-
-}
+#
+#     observeEvent({
+#         # This will calculate values and send out messages to everyone in "new_user" df
+#         # could just have people not choose what they want alerts for?
+#         #initial_alert()
+#         alertInvalidate()
+#     }, {
+#         # send_alerts is defined in R/alerts_module.R
+#         send_alerts(dropbox_data)
+#     })
+#
+ }
