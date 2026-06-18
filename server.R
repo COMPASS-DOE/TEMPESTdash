@@ -50,7 +50,7 @@ server <- function(input, output, session) {
     dropbox_data <- reactive({
         # Invalidate and re-execute this reactive when timer fires
         dataInvalidate()
-
+browser()
         if(TESTING) {
             sapflow <- readRDS("offline-data/sapflow") %>% rename(Sapflow_ID = Tree_Code)
             teros <- readRDS("offline-data/teros")
@@ -80,7 +80,7 @@ server <- function(input, output, session) {
         aquatroll_list <- compute_aquatroll(aquatroll, ddt)
         battery_list <- compute_battery(battery, ddt)
         redox_list <- compute_redox(redox, ddt)
-
+browser()
         # Return data and badge information
         c(sapflow_list, teros_list, aquatroll_list, battery_list, redox_list)
     })
@@ -171,7 +171,8 @@ server <- function(input, output, session) {
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["sapflow"]] ->
+        dropbox_data()[["sapflow"]] %>%
+            filter(Timestamp >= "2024-06-09") ->
             sapflow
 
         if(nrow(sapflow)) {
@@ -182,6 +183,18 @@ server <- function(input, output, session) {
                 summarise(Value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, Value, color = Plot, group = Logger)) +
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST")),
+                          ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-12 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                              ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE))) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                              ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE))) +
                 geom_line() +
                 xlab("") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
@@ -200,7 +213,8 @@ server <- function(input, output, session) {
         # This graph is shown when users click the "TEROS" tab on the dashboard
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["teros"]] ->
+        dropbox_data()[["teros"]] %>%
+            filter(Timestamp >= "2024-06-09") ->
             teros
 
         if(nrow(teros)) {
@@ -219,6 +233,18 @@ server <- function(input, output, session) {
                 filter(var == "EC") %>%
                 ggplot() +
                 shaded_flood_rect(ymin = low, ymax = high) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-12 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
@@ -231,6 +257,18 @@ server <- function(input, output, session) {
                 filter(var == "TSOIL") %>%
                 ggplot() +
                 shaded_flood_rect(ymin = low, ymax = high) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
@@ -243,6 +281,18 @@ server <- function(input, output, session) {
                 filter(var == "VWC") %>%
                 ggplot() +
                 shaded_flood_rect(ymin = low, ymax = high) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
@@ -267,13 +317,14 @@ server <- function(input, output, session) {
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
         bind_rows(dropbox_data()[["aquatroll_200_long"]],
-                  dropbox_data()[["aquatroll_600_long"]]) ->
+                  dropbox_data()[["aquatroll_600_long"]]) %>%
+            filter(Timestamp >= "2024-06-09") ->
             full_trolls_long
 
         if(nrow(full_trolls_long) > 1) {
             full_trolls_long %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
-                group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
+                group_by(Logger_ID, Plot, Well_Name, Timestamp_rounded, variable) %>%
                 summarise(Well_Name = Well_Name,
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
                 left_join(AQUATROLL_RANGE, by = "variable") %>%
@@ -281,48 +332,92 @@ server <- function(input, output, session) {
                 # a tidyr::pivot error when there's a 'variable' column; rename
                 rename(var = variable) -> t
 
-                t %>%
-                    filter(var == "Pressure_psi") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+            t %>%
+                filter(var == "Pressure_psi") %>%
+                ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 shaded_flood_rect(ymin = low, ymax = high) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                              ymin = low, ymax = high)) +
                 geom_line() +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
-                facet_wrap(~var, scales = "free", ncol = 2) +
                 xlab("") -> t1
 
                 t %>%
                     filter(var == "Salinity") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
                     coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                     shaded_flood_rect(ymin = low, ymax = high) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
                     geom_line() +
                     geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                     geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
-                    facet_wrap(~var, scales = "free", ncol = 2) +
                     xlab("") -> t2
 
                 t %>%
                     filter(var == "Temp") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
                     coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                     shaded_flood_rect(ymin = low, ymax = high) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
                     geom_line() +
                     geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                     geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
-                    facet_wrap(~var, scales = "free", ncol = 2) +
                     xlab("") -> t3
 
                 t %>%
                     filter(var == "DO_mgl") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
+                    ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
                     coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                     shaded_flood_rect(ymin = low, ymax = high) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
+                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                              aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                                  xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                                  ymin = low, ymax = high)) +
                     geom_line() +
                     geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                     geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
-                    facet_wrap(~var, scales = "free", ncol = 2) +
                     xlab("") -> t4
 
         } else {
@@ -339,13 +434,26 @@ server <- function(input, output, session) {
     output$redox_plot <- renderPlotly({
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["redox"]] ->
+        dropbox_data()[["redox"]] %>%
+            filter(Timestamp >= "2024-06-09") ->
             redox
 
         if(nrow(redox)) {
             redox %>%
                 ggplot(aes(Timestamp, Redox, color = Plot, group = interaction(Plot, Ref, Depth_cm), linetype = Ref)) +
                 shaded_flood_rect(ymin = 0, ymax = 1000) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST")),
+                          ymin = 0, ymax = 1000) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                              ymin = 0, ymax = 1000)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                              ymin = 0, ymax = 1000)) +
                 geom_line() +
                 xlab("") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) ->
@@ -370,6 +478,18 @@ server <- function(input, output, session) {
             battery %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
                 shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST")),
+                          ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
+                              ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE))) +
+                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
+                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
+                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
+                              ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE))) +
                 geom_line() +
                 labs(x = "", y = "Battery (V)", color = "Logger") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
@@ -622,14 +742,14 @@ server <- function(input, output, session) {
 
     # ------------------ Text alerts -----------------------------
 
-    observeEvent({
-        # This will calculate values and send out messages to everyone in "new_user" df
-        # could just have people not choose what they want alerts for?
-        #initial_alert()
-        alertInvalidate()
-    }, {
-        # send_alerts is defined in R/alerts_module.R
-        send_alerts(dropbox_data)
-    })
+    # observeEvent({
+    #     # This will calculate values and send out messages to everyone in "new_user" df
+    #     # could just have people not choose what they want alerts for?
+    #     #initial_alert()
+    #     alertInvalidate()
+    # }, {
+    #     # send_alerts is defined in R/alerts_module.R
+    #     send_alerts(dropbox_data)
+    # })
 
 }

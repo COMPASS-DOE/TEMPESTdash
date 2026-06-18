@@ -24,8 +24,8 @@ ui <- dashboardPage(
             menuItem("AquaTroll", tabName = "troll", icon = icon("water")),
             menuItem("Redox", tabName = "redox", icon = icon("face-smile")),
             menuItem("Battery", tabName = "battery", icon = icon("car-battery")),
-            menuItem("Maps", tabName = "maps", icon = icon("map-location-dot")),
-            menuItem("Alerts", tabName = "alerts", icon = icon("comment-dots"))
+            menuItem("Maps", tabName = "maps", icon = icon("map-location-dot"))#,
+            #menuItem("Alerts", tabName = "alerts", icon = icon("comment-dots"))
         )
     ),
     dashboardBody(
@@ -85,11 +85,11 @@ ui <- dashboardPage(
                            ),
                            tabPanel(
                                title = "TEROS",
-                               plotlyOutput("teros_plot", height = "400px")
+                               plotlyOutput("teros_plot", height = "700px")
                            ),
                            tabPanel(
                                title = "AquaTroll",
-                               plotlyOutput("aquatroll_plot", height = "400px")
+                               plotlyOutput("aquatroll_plot", height = "700px")
                            ),
                            tabPanel(
                                title = "Redox",
@@ -128,9 +128,9 @@ ui <- dashboardPage(
                 dataTableOutput("btable")
             ),
             # Maps tab UI is defined in R/maps_module.R
-            mapsUI("mapsTab"),
+            mapsUI("mapsTab")#,
             # Alerts tab UI is defined in R/alerts_module.R
-            alertsUI("alertsTab")
+            #alertsUI("alertsTab")
         )
     )
 )
