@@ -55,7 +55,7 @@ process_redox <- function(token, datadir) {
 
     pattern <- "(ERT.*RedoxTEST|TEMPEST.*Redox15)"
 
-    process_dir(datadir, pattern, read_datalogger_file, dropbox_token = NULL) %>%
+    process_dir(datadir, pattern, read_datalogger_file, dropbox_token = token) %>%
         clean_names() -> redox_raw
 
     redox_raw %>%

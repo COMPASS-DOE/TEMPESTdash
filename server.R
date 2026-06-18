@@ -459,7 +459,7 @@ server <- function(input, output, session) {
         ggplot(t, aes(hour, value, color = Event)) +
             geom_line(aes(linewidth = Event)) +
             coord_cartesian(xlim = c(-10, NA)) +
-            facet_wrap(~Plot, ncol = 1) +
+            facet_wrap(~Plot, ncol = 1, scales = "free_y") +
             ylab("Soil Electrical Conductivity - 15cm") +
             scale_color_manual(
                 values = c("T4" = "black", "T3" = "lightcyan4", "T2" = "lightcyan3", "T1" = "lightcyan2")) +

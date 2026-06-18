@@ -44,7 +44,7 @@ process_teros <- function(token, datadir) {
                Logger = as.character(Logger)) %>%
         select(Timestamp, Plot, ID, Grid_Square, Logger, variable, Depth, value) -> t
 
-    process_dir(datadir = datadir, pattern = "84_Teros21", read_datalogger_file) %>%
+    process_dir(datadir = datadir, pattern = "84_Teros21", read_datalogger_file, dropbox_token = token) %>%
         pivot_longer(starts_with("Teros"), names_to = "channel") %>%
         filter(!is.na(value)) %>%
         rename(Timestamp = TIMESTAMP) %>%
@@ -69,7 +69,8 @@ process_teros <- function(token, datadir) {
                Depth = as.factor(Depth)) %>%
         select(Timestamp, Plot, ID, Grid_Square, Logger, variable, Depth, value) -> ert_21
 
-    process_dir(datadir = datadir, pattern = "84_Teros12", read_datalogger_file) %>%
+
+    process_dir(datadir = datadir, pattern = "84_Teros12", read_datalogger_file, dropbox_token = token) %>%
         pivot_longer(starts_with("Teros"), names_to = "channel") %>%
         filter(!is.na(value)) %>%
         rename(Timestamp = TIMESTAMP) %>%

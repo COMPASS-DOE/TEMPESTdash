@@ -59,7 +59,7 @@ compute_teros <- function(teros, ddt) {
     # variables within a single dataset. We compute out-of-limits for each
     # variable, and then combine to a single value and badge color
 
-    teros %>%
+        teros %>%
         filter_recent_timestamps(FLAG_TIME_WINDOW, ddt) %>%
         left_join(TEROS_RANGE, by = "variable") ->
         teros_filtered
