@@ -53,7 +53,7 @@ server <- function(input, output, session) {
     dropbox_data <- reactive({
         # Invalidate and re-execute this reactive when timer fires
         dataInvalidate()
-browser()
+
         if(TESTING) {
             sapflow <- readRDS("offline-data/sapflow")# %>% rename(Sapflow_ID = Tree_Code)
             teros <- readRDS("offline-data/teros")
@@ -200,8 +200,7 @@ browser()
         # Average sapflow data by plot and 15 minute interval
         # This graph is shown when users click the "Sapflow" tab on the dashboard
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["sapflow"]] %>%
-            filter(Timestamp >= "2024-06-09") ->
+        dropbox_data()[["sapflow"]] ->
             sapflow
 
         if(nrow(sapflow)) {
@@ -212,18 +211,6 @@ browser()
                 summarise(Value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
                 ggplot(aes(Timestamp_rounded, Value, color = Plot, group = Logger)) +
                 shaded_flood_rect(ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST")),
-                          ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-12 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                              ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE))) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                              ymin = min(SAPFLOW_RANGE), ymax = max(SAPFLOW_RANGE))) +
                 geom_line() +
                 xlab("") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
@@ -242,8 +229,7 @@ browser()
         # This graph is shown when users click the "TEROS" tab on the dashboard
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["teros"]] %>%
-            filter(Timestamp >= "2024-06-09") ->
+        dropbox_data()[["teros"]] ->
             teros
 
         if(nrow(teros)) {
@@ -262,18 +248,6 @@ browser()
                 filter(var == "EC") %>%
                 ggplot() +
                 shaded_flood_rect(ymin = low, ymax = high) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-12 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
@@ -286,18 +260,6 @@ browser()
                 filter(var == "TSOIL") %>%
                 ggplot() +
                 shaded_flood_rect(ymin = low, ymax = high) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
@@ -310,18 +272,6 @@ browser()
                 filter(var == "VWC") %>%
                 ggplot() +
                 shaded_flood_rect(ymin = low, ymax = high) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
                 facet_wrap(~var, scales = "free", ncol = 2) +
                 geom_line(aes(Timestamp_rounded, value, color = Plot, group = Logger)) +
                 xlab("") +
@@ -346,14 +296,13 @@ browser()
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
         bind_rows(dropbox_data()[["aquatroll_200_long"]],
-                  dropbox_data()[["aquatroll_600_long"]]) %>%
-            filter(Timestamp >= "2024-06-09") ->
+                  dropbox_data()[["aquatroll_600_long"]]) ->
             full_trolls_long
 
         if(nrow(full_trolls_long) > 1) {
             full_trolls_long %>%
                 mutate(Timestamp_rounded = round_date(Timestamp, GRAPH_TIME_INTERVAL)) %>%
-                group_by(Logger_ID, Plot, Well_Name, Timestamp_rounded, variable) %>%
+                group_by(Logger_ID, Well_Name, Timestamp_rounded, variable) %>%
                 summarise(Well_Name = Well_Name,
                           value = mean(value, na.rm = TRUE), .groups = "drop") %>%
                 left_join(AQUATROLL_RANGE, by = "variable") %>%
@@ -361,92 +310,48 @@ browser()
                 # a tidyr::pivot error when there's a 'variable' column; rename
                 rename(var = variable) -> t
 
-            t %>%
-                filter(var == "Pressure_psi") %>%
-                ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
+                t %>%
+                    filter(var == "Pressure_psi") %>%
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                 shaded_flood_rect(ymin = low, ymax = high) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                              ymin = low, ymax = high)) +
                 geom_line() +
                 geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                 geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                facet_wrap(~var, scales = "free", ncol = 2) +
                 xlab("") -> t1
 
                 t %>%
                     filter(var == "Salinity") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
                     coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                     shaded_flood_rect(ymin = low, ymax = high) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
                     geom_line() +
                     geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                     geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                    facet_wrap(~var, scales = "free", ncol = 2) +
                     xlab("") -> t2
 
                 t %>%
                     filter(var == "Temp") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
                     coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                     shaded_flood_rect(ymin = low, ymax = high) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
                     geom_line() +
                     geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                     geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                    facet_wrap(~var, scales = "free", ncol = 2) +
                     xlab("") -> t3
 
                 t %>%
                     filter(var == "DO_mgl") %>%
-                    ggplot(aes(Timestamp_rounded, value, color = Plot, group = Well_Name)) +
+                    ggplot(aes(Timestamp_rounded, value, color = Well_Name)) +
                     coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
                     shaded_flood_rect(ymin = low, ymax = high) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-11 16:26:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
-                    geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                              aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                                  xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                                  ymin = low, ymax = high)) +
                     geom_line() +
                     geom_hline(aes(yintercept = low), color = "grey", linetype = 2) +
                     geom_hline(aes(yintercept = high), color = "grey", linetype = 2) +
+                    facet_wrap(~var, scales = "free", ncol = 2) +
                     xlab("") -> t4
 
         } else {
@@ -463,8 +368,7 @@ browser()
     output$redox_plot <- renderPlotly({
 
         ddt <- reactive({ DASHBOARD_DATETIME() })()
-        dropbox_data()[["redox"]] %>%
-            filter(Timestamp >= "2024-06-09") ->
+        dropbox_data()[["redox"]] ->
             redox
 
         if(nrow(redox)) {
@@ -519,18 +423,6 @@ browser()
             battery %>%
                 ggplot(aes(Timestamp, BattV_Avg, color = as.factor(Logger))) +
                 shaded_flood_rect(ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-11 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-11 16:26:00", tz = "EST")),
-                          ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE)) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-12 05:30:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-12 16:10:00", tz = "EST"),
-                              ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE))) +
-                geom_rect(group = 1, color = NA, fill = "#BBE7E6", alpha = 0.7,
-                          aes(xmin = as_datetime("2024-06-13 05:10:00", tz = "EST"),
-                              xmax = as_datetime("2024-06-13 16:10:00", tz = "EST"),
-                              ymin = min(VOLTAGE_RANGE), ymax = max(VOLTAGE_RANGE))) +
                 geom_line() +
                 labs(x = "", y = "Battery (V)", color = "Logger") +
                 coord_cartesian(xlim = c(ddt - GRAPH_TIME_WINDOW * 60 * 60, ddt)) +
