@@ -1,0 +1,13 @@
+name: TEMPEST-4-Explorer
+title: TEMPEST-4-Explorer
+username: compassdashboards
+account: compassdashboards
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17532002
+bundleId: 12161963
+url: https://compassdashboards.shinyapps.io/TEMPEST-4-Explorer/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: TEMPEST4.rds
